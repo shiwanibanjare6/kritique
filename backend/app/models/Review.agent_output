@@ -1,0 +1,17 @@
+{
+    "summary":"Overall good PR.",
+
+    "security_score":95,
+    "style_score":90,
+    "architecture_score":88,
+    "final_score":91,
+
+    "comments":[
+        {
+            "file":"README.md",
+            "line":408,
+            "severity":"warning",
+            "comment":"Sentence is unprofessional."
+        }
+    ]
+}

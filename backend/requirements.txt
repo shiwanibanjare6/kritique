@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+
+pydantic
+pydantic-settings
+python-dotenv
+
+httpx
+
+sqlalchemy>=2.0
+asyncpg
+alembic
+
+PyGithub
+openai==2.49.0
+python-multipart
