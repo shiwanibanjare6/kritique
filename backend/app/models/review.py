@@ -9,6 +9,7 @@ from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from sqlalchemy import String
 
 from app.database.base import Base
 
@@ -46,6 +47,26 @@ class Review(Base):
     final_score: Mapped[float] = mapped_column(
         Float,
         default=0.0,
+    )
+    
+    merge_recommendation: Mapped[str] = mapped_column(
+    Text,
+    default="Merge After Minor Changes",
+)
+
+    risk_level: Mapped[str] = mapped_column(
+        String(30),
+        default="Low",
+    )
+
+    strengths: Mapped[list] = mapped_column(
+        JSON,
+        default=list,
+    )
+
+    weaknesses: Mapped[list] = mapped_column(
+        JSON,
+        default=list,
     )
 
     agent_output: Mapped[dict] = mapped_column(

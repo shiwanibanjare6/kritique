@@ -114,6 +114,7 @@ class WebhookService:
         )
 
         overall_summary = []
+        pr_summaries = []
 
         review_scores = {
             "security_score": 0,
@@ -153,8 +154,39 @@ class WebhookService:
             )
 
             overall_summary.append(
-                f"## {file['filename']}\n\n{review['summary']}"
-            )
+    f"""
+## 📄 {file['filename']}
+
+### Summary
+{review['summary']}
+
+### Overall Recommendation
+{review.get("merge_recommendation", "Merge After Minor Changes")}
+
+### Security
+{review.get("security_reason", "No security issues detected.")}
+
+### Style
+{review.get("style_reason", "Code style is acceptable.")}
+
+### Architecture
+{review.get("architecture_reason", "Architecture looks good.")}
+"""
+)
+            
+            pr_summaries.append(
+    f"""
+File: {file['filename']}
+
+Summary:
+{review['summary']}
+
+Security Score: {review['security_score']}
+Style Score: {review['style_score']}
+Architecture Score: {review['architecture_score']}
+Overall Score: {review['final_score']}
+"""
+)
 
             review_scores["security_score"] += review.get(
                 "security_score", 0
@@ -182,7 +214,10 @@ class WebhookService:
                 }
 
                 all_comments.append(github_comment)
-
+        overall_review = await self.ai_review.review_pull_request(
+            pr_summaries
+        )
+        
         file_count = max(len(files), 1)
 
         summary = "\n\n".join(overall_summary)
@@ -195,14 +230,22 @@ class WebhookService:
         final_score = review_scores["final_score"] / file_count
 
         await self.review_repo.create(
-            pull_request_id=saved_pr.id,
-            summary=summary,
-            security_score=security_score,
-            style_score=style_score,
-            architecture_score=architecture_score,
-            final_score=final_score,
-            agent_output=all_agent_output,
-        )
+    pull_request_id=saved_pr.id,
+
+    summary=summary,
+
+    security_score=security_score,
+    style_score=style_score,
+    architecture_score=architecture_score,
+    final_score=final_score,
+
+    merge_recommendation=overall_review["merge_recommendation"],
+    risk_level=overall_review["risk_level"],
+    strengths=overall_review["strengths"],
+    weaknesses=overall_review["weaknesses"],
+
+    agent_output=all_agent_output,
+)
 
         print("\n" + "=" * 80)
         print("AI REVIEW")
