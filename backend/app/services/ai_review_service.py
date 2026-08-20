@@ -216,15 +216,19 @@ Think like a Senior Engineering Manager deciding whether to approve the PR.
 
 Provide:
 
-1. Overall merge recommendation.
-2. Overall project quality.
-3. Overall risk.
-4. Biggest strengths.
-5. Biggest weaknesses.
+
+1. A concise overall summary of the Pull Request.
+2. Overall merge recommendation.
+3. Overall project quality.
+4. Overall risk.
+5. Biggest strengths.
+6. Biggest weaknesses.
 
 Return ONLY JSON.
 
 {{
+    "summary": "Detailed overall assessment of the Pull Request.",
+    
     "merge_recommendation":"Ready to Merge | Merge After Minor Changes | Changes Required",
 
     "risk_level":"Low | Medium | High",
@@ -277,6 +281,7 @@ Rules:
         except Exception:
 
             return {
+                "summary": "Unable to generate an overall Pull Request assessment.",
                 "merge_recommendation": "Merge After Minor Changes",
                 "risk_level": "Low",
                 "strengths": [],

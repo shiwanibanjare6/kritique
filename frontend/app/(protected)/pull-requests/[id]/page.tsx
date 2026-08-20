@@ -234,6 +234,10 @@ export default async function PullRequestDetailsPage({
     <section className="mb-8">
   <ReviewSummary
   summary={review.summary}
+  strengths={review.strengths}
+  weaknesses={review.weaknesses}
+  riskLevel={review.risk_level}
+  mergeRecommendation={review.merge_recommendation}
 />
 </section>
 

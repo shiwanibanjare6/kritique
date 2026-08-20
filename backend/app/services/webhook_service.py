@@ -232,7 +232,7 @@ Overall Score: {review['final_score']}
         await self.review_repo.create(
     pull_request_id=saved_pr.id,
 
-    summary=summary,
+    summary=overall_review["summary"],
 
     security_score=security_score,
     style_score=style_score,
@@ -254,12 +254,23 @@ Overall Score: {review['final_score']}
         print("=" * 80)
 
         await self.github_service.create_review(
-            owner=repository.owner,
-            repo=repository.name,
-            pull_number=saved_pr.pr_number,
-            body=summary,
-            comments=all_comments if all_comments else None,
-        )
+    owner=repository.owner,
+    repo=repository.name,
+    pull_number=saved_pr.pr_number,
+    body=(
+        f"## 🤖 AI Review Summary\n\n"
+        f"{overall_review['summary']}\n\n"
+        f"### Risk Level\n"
+        f"{overall_review['risk_level']}\n\n"
+        f"### Merge Recommendation\n"
+        f"{overall_review['merge_recommendation']}\n\n"
+        f"### Strengths\n"
+        + "\n".join(f"- {s}" for s in overall_review["strengths"])
+        + "\n\n### Weaknesses\n"
+        + "\n".join(f"- {w}" for w in overall_review["weaknesses"])
+    ),
+    comments=all_comments if all_comments else None,
+)
 
         return {
             "status": "saved",
