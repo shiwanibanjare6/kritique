@@ -68,10 +68,12 @@ export default function RepositoriesPage() {
           </p>
         </div>
 
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Connect Repository
-        </Button>
+        <Button
+  onClick={() => router.push("/repositories/connect")}
+>
+  <Plus className="mr-2 h-4 w-4" />
+  Connect Repository
+</Button>
       </div>
 
       {loading ? (

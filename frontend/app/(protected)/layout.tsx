@@ -1,9 +1,11 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+
 import { AppSidebar } from "@/components/app-sidebar";
 
 export default async function ProtectedLayout({
@@ -18,7 +20,7 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar
         user={{
           name: session.user?.name ?? "GitHub User",
@@ -26,7 +28,10 @@ export default async function ProtectedLayout({
           avatar: session.user?.image ?? "",
         }}
       />
-      <SidebarInset>{children}</SidebarInset>
+
+      <SidebarInset>
+        {children}
+      </SidebarInset>
     </SidebarProvider>
   );
 }
