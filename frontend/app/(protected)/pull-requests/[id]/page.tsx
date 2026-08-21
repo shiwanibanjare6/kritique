@@ -34,18 +34,21 @@ interface Props {
 }
 
 async function getPullRequest(id: string): Promise<PullRequest> {
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
   const res = await fetch(
-    `http://127.0.0.1:8000/api/v1/pull-requests/${id}`,
+    `${API_URL}/api/v1/pull-requests/${id}`,
     {
       cache: "no-store",
     }
-  )
+  );
 
   if (!res.ok) {
-    notFound()
+    notFound();
   }
 
-  return res.json()
+  return res.json();
 }
 
 export default async function PullRequestDetailsPage({

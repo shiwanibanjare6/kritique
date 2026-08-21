@@ -3,11 +3,62 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
 from app.repositories.repository_repository import RepositoryRepository
+from app.services.github_service import GitHubService
 
 router = APIRouter(
     prefix="/api/v1/github",
     tags=["github"],
 )
+
+@router.get("/github-repositories")
+async def get_github_repositories():
+    github_service = GitHubService()
+
+    repositories = await github_service.get_repositories()
+
+    return [
+        {
+            "github_id": repo["id"],
+            "owner": repo["owner"]["login"],
+            "name": repo["name"],
+            "full_name": repo["full_name"],
+            "default_branch": repo["default_branch"],
+        }
+        for repo in repositories
+    ]
+    
+@router.post("/repositories/connect")
+async def connect_repository(
+    github_id: int,
+    owner: str,
+    name: str,
+    full_name: str,
+    default_branch: str,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = RepositoryRepository(db)
+
+    existing = await repo.get_by_github_id(github_id)
+
+    if existing:
+        return {
+            "status": "already_connected",
+            "repository_id": existing.id,
+        }
+
+    repository = await repo.create(
+        github_id=github_id,
+        owner=owner,
+        name=name,
+        full_name=full_name,
+        default_branch=default_branch,
+    )
+
+    return {
+        "status": "connected",
+        "repository_id": repository.id,
+        "full_name": repository.full_name,
+    }
 
 
 @router.get("/repositories")

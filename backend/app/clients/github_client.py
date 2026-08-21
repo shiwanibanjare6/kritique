@@ -79,6 +79,51 @@ class GitHubClient:
                 headers=self.headers,
                 json=payload,
             )
+            
+            
+        async def get_repositories(self):
+            url = f"{self.base_url}/user/repos"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers=self.headers,
+                params={
+                    "per_page": 100,
+                    "sort": "updated",
+                },
+            )
 
         response.raise_for_status()
         return response.json()
+    
+    
+        async def get_repositories(self):
+            url = f"{self.base_url}/user/repos"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers=self.headers,
+                params={
+                    "per_page": 100,
+                },
+            )
+            
+    async def get_repositories(self):
+        url = f"{self.base_url}/user/repos"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers=self.headers,
+                params={
+                    "per_page": 100,
+                },
+            )
+
+        response.raise_for_status()
+        return response.json()
+    
+    
+    

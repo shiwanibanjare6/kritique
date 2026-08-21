@@ -8,10 +8,26 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    env:
+      APP_NAME: Kritique
+      APP_VERSION: "1.0.0"
+      DEBUG: "false"
+      HOST: "127.0.0.1"
+      PORT: "8000"
+      GITHUB_SECRET: test-secret
+      GITHUB_TOKEN: test-token
+      DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/test
+      GROQ_API_KEY: test-key
+      REDIS_URL: ""
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+
       - run: pip install -r backend/requirements.txt pytest
+
       - run: pytest backend/app/tests
