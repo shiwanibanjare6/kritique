@@ -34,22 +34,21 @@ async def get_pull_requests(
             )
 
             latest_review = {
-                "id": latest.id,
-                "summary": latest.summary,
+    "id": latest.id,
+    "summary": latest.summary,
+    "security_score": latest.security_score,
+    "style_score": latest.style_score,
+    "architecture_score": latest.architecture_score,
+    "final_score": latest.final_score,
 
-                "security_score": latest.security_score,
-                "style_score": latest.style_score,
-                "architecture_score": latest.architecture_score,
-                "final_score": latest.final_score,
+    "merge_recommendation": latest.merge_recommendation,
+    "risk_level": latest.risk_level,
+    "strengths": latest.strengths,
+    "weaknesses": latest.weaknesses,
 
-                "merge_recommendation": latest.merge_recommendation,
-                "risk_level": latest.risk_level,
-                "strengths": latest.strengths,
-                "weaknesses": latest.weaknesses,
-
-                "created_at": latest.created_at,
-                "agent_output": latest.agent_output,
-            }
+    "created_at": latest.created_at,
+    "agent_output": latest.agent_output,
+}
 
         response.append(
             {
