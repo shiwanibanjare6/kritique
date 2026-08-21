@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_db
 from app.repositories.pull_request_repository import PullRequestRepository
 
+
 router = APIRouter(
     prefix="/api/v1/pull-requests",
     tags=["Pull Requests"],
@@ -35,10 +36,17 @@ async def get_pull_requests(
             latest_review = {
                 "id": latest.id,
                 "summary": latest.summary,
+
                 "security_score": latest.security_score,
                 "style_score": latest.style_score,
                 "architecture_score": latest.architecture_score,
                 "final_score": latest.final_score,
+
+                "merge_recommendation": latest.merge_recommendation,
+                "risk_level": latest.risk_level,
+                "strengths": latest.strengths,
+                "weaknesses": latest.weaknesses,
+
                 "created_at": latest.created_at,
                 "agent_output": latest.agent_output,
             }
@@ -52,12 +60,14 @@ async def get_pull_requests(
                 "state": pr.state,
                 "base_branch": pr.base_branch,
                 "head_branch": pr.head_branch,
+
                 "repository": {
                     "id": pr.repository.id,
                     "name": pr.repository.name,
                     "full_name": pr.repository.full_name,
                     "owner": pr.repository.owner,
                 },
+
                 "latest_review": latest_review,
             }
         )
@@ -91,10 +101,17 @@ async def get_pull_request(
         latest_review = {
             "id": latest.id,
             "summary": latest.summary,
+
             "security_score": latest.security_score,
             "style_score": latest.style_score,
             "architecture_score": latest.architecture_score,
             "final_score": latest.final_score,
+
+            "merge_recommendation": latest.merge_recommendation,
+            "risk_level": latest.risk_level,
+            "strengths": latest.strengths,
+            "weaknesses": latest.weaknesses,
+
             "created_at": latest.created_at,
             "agent_output": latest.agent_output,
         }
@@ -108,11 +125,13 @@ async def get_pull_request(
         "state": pr.state,
         "base_branch": pr.base_branch,
         "head_branch": pr.head_branch,
+
         "repository": {
             "id": pr.repository.id,
             "name": pr.repository.name,
             "full_name": pr.repository.full_name,
             "owner": pr.repository.owner,
         },
+
         "latest_review": latest_review,
     }
