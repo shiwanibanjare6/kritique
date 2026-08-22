@@ -1,13 +1,11 @@
 from app.clients.github_client import GitHubClient
-from app.core.config import settings
 
 
 class GitHubService:
 
-    def __init__(self):
-        self.client = GitHubClient()
-        self.github_token = settings.GITHUB_TOKEN
-        
+    def __init__(self, token: str | None = None):
+        self.client = GitHubClient(token)
+
     async def get_repositories(self):
         return await self.client.get_repositories()
 
@@ -56,20 +54,6 @@ class GitHubService:
         body: str,
         comments: list | None = None,
     ):
-        """
-        Creates a GitHub Pull Request review.
-
-        body:
-            Overall AI review summary.
-
-        comments:
-            Optional inline review comments.
-            
-        """
-        
-        async def get_repositories(self):
-            return await self.client.get_repositories()
-
         return await self.client.create_pull_request_review(
             owner=owner,
             repo=repo,

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import api from "@/services/api";
+
 
 interface GitHubRepository {
   github_id: number;
@@ -12,24 +14,34 @@ interface GitHubRepository {
 }
 
 export default function ConnectRepositoryPage() {
+  const { data: session } = useSession();
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<number | null>(null);
 
   useEffect(() => {
-    async function loadRepositories() {
-      try {
-        const res = await api.get("/github/github-repositories");
-        setRepositories(res.data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
+  if (!session?.accessToken) {
+    return;
+  }
 
-    loadRepositories();
-  }, []);
+  async function loadRepositories() {
+    try {
+      const res = await api.get("/github/github-repositories", {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+
+      setRepositories(res.data);
+    } catch (error) {
+      console.error("Failed to load GitHub repositories:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadRepositories();
+}, [session]);
 
   async function connectRepository(repo: GitHubRepository) {
     try {

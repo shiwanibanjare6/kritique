@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
@@ -11,8 +11,24 @@ router = APIRouter(
 )
 
 @router.get("/github-repositories")
-async def get_github_repositories():
-    github_service = GitHubService()
+async def get_github_repositories(
+    authorization: str = Header(...),
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header",
+        )
+
+    token = authorization.replace("Bearer ", "", 1).strip()
+
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="GitHub access token missing",
+        )
+
+    github_service = GitHubService(token)
 
     repositories = await github_service.get_repositories()
 
