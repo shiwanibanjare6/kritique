@@ -7,7 +7,7 @@ python-dotenv
 
 httpx
 
-sqlalchemy>=2.0
+sqlalchemy[asyncio]>=2.0
 asyncpg
 alembic
 
