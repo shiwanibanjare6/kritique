@@ -8,6 +8,7 @@ from app.repositories.review_repository import ReviewRepository
 
 from app.services.github_service import GitHubService
 from app.services.ai_review_service import AIReviewService
+from app.core.logging import logger
 
 class WebhookService:
 
@@ -30,17 +31,18 @@ class WebhookService:
         event_type: str,
         delivery_id: str,
     ):
-        print("=" * 50)
-        print("Webhook received")
-        print(event_type)
-        print(payload.get("action"))
-        print("=" * 50)
-
         if "pull_request" not in payload:
             return {
                 "status": "ignored",
                 "reason": "Not a pull_request event",
             }
+
+        if payload.get("action") not in {"opened", "reopened", "synchronize", "ready_for_review"}:
+            return {"status": "ignored", "reason": "Pull request action does not require a review"}
+
+        existing_event = await self.webhook_repo.get_by_delivery_id(delivery_id)
+        if existing_event:
+            return {"status": "duplicate", "delivery_id": delivery_id}
 
         repo_data = payload["repository"]
 
@@ -58,25 +60,7 @@ class WebhookService:
                 default_branch=repo_data["default_branch"],
             )
 
-        existing_event = await self.webhook_repo.get_by_delivery_id(
-            delivery_id
-        )
-
-        if existing_event:
-            print(f"Webhook {delivery_id} already processed.")
-            return {
-                "status": "duplicate",
-                "delivery_id": delivery_id,
-            }
-
-        await self.webhook_repo.create(
-            repository_id=repository.id,
-            delivery_id=delivery_id,
-            event_type=event_type,
-            payload=payload,
-        )
         pr = payload["pull_request"]
-        print("Pull Request Found")
 
         existing_pr = await self.pull_request_repo.get_by_github_id(
             pr["id"]
@@ -106,14 +90,10 @@ class WebhookService:
             saved_pr.pr_number,
         )
         
-        print(files)
-        print(len(files))
-
         await self.pull_request_file_repo.delete_by_pr(
             saved_pr.id
         )
 
-        overall_summary = []
         pr_summaries = []
 
         review_scores = {
@@ -140,7 +120,6 @@ class WebhookService:
             )
 
             # AI Review
-            print(file["filename"])
             review = await self.ai_review.review_code(
                 filename=file["filename"],
                 patch=file.get("patch"),
@@ -153,27 +132,6 @@ class WebhookService:
                 }
             )
 
-            overall_summary.append(
-    f"""
-## 📄 {file['filename']}
-
-### Summary
-{review['summary']}
-
-### Overall Recommendation
-{review.get("merge_recommendation", "Merge After Minor Changes")}
-
-### Security
-{review.get("security_reason", "No security issues detected.")}
-
-### Style
-{review.get("style_reason", "Code style is acceptable.")}
-
-### Architecture
-{review.get("architecture_reason", "Architecture looks good.")}
-"""
-)
-            
             pr_summaries.append(
     f"""
 File: {file['filename']}
@@ -220,8 +178,6 @@ Overall Score: {review['final_score']}
         
         file_count = max(len(files), 1)
 
-        summary = "\n\n".join(overall_summary)
-
         security_score = review_scores["security_score"] / file_count
         style_score = review_scores["style_score"] / file_count
         architecture_score = (
@@ -247,12 +203,6 @@ Overall Score: {review['final_score']}
     agent_output=all_agent_output,
 )
 
-        print("\n" + "=" * 80)
-        print("AI REVIEW")
-        print("=" * 80)
-        print(summary)
-        print("=" * 80)
-
         await self.github_service.create_review(
     owner=repository.owner,
     repo=repository.name,
@@ -270,7 +220,16 @@ Overall Score: {review['final_score']}
         + "\n".join(f"- {w}" for w in overall_review["weaknesses"])
     ),
     comments=all_comments if all_comments else None,
-)
+        )
+
+        await self.webhook_repo.create(
+            repository_id=repository.id,
+            delivery_id=delivery_id,
+            event_type=event_type,
+            payload=payload,
+        )
+
+        logger.info("AI review completed for %s#%s (%d files)", repository.full_name, saved_pr.pr_number, len(files))
 
         return {
             "status": "saved",

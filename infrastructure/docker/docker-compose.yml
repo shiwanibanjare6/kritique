@@ -4,8 +4,16 @@ services:
     build:
       context: ../../backend
       dockerfile: Dockerfile
+    env_file:
+      - ../../backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/app
+      HOST: 0.0.0.0
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
   postgres:
     image: postgres:15
     environment:
@@ -14,6 +22,11 @@ services:
       POSTGRES_DB: app
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   redis:
     image: redis:7
     ports:

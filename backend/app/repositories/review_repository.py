@@ -3,6 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.review import Review
+from app.models.pull_request import PullRequest
+from app.models.repository_connection import RepositoryConnection
 
 
 class ReviewRepository:
@@ -45,3 +47,30 @@ class ReviewRepository:
         )
 
         return result.scalars().all()
+
+    async def get_all_for_user(self, github_login: str):
+        result = await self.db.execute(
+            select(Review)
+            .join(PullRequest)
+            .join(RepositoryConnection, PullRequest.repository_id == RepositoryConnection.repository_id)
+            .where(RepositoryConnection.github_login == github_login)
+            .order_by(desc(Review.created_at))
+        )
+        return result.scalars().all()
+
+    async def is_owned_by_user(self, review_id: int, github_login: str) -> bool:
+        result = await self.db.execute(
+            select(Review.id)
+            .join(PullRequest)
+            .join(RepositoryConnection, PullRequest.repository_id == RepositoryConnection.repository_id)
+            .where(Review.id == review_id, RepositoryConnection.github_login == github_login)
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def pull_request_is_owned_by_user(self, pull_request_id: int, github_login: str) -> bool:
+        result = await self.db.execute(
+            select(PullRequest.id)
+            .join(RepositoryConnection, PullRequest.repository_id == RepositoryConnection.repository_id)
+            .where(PullRequest.id == pull_request_id, RepositoryConnection.github_login == github_login)
+        )
+        return result.scalar_one_or_none() is not None

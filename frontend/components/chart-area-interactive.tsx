@@ -13,6 +13,7 @@ import {
 
 import api from "@/services/api";
 import type { PullRequest } from "@/types";
+import { formatScore } from "@/lib/format-score";
 
 import {
   Card,
@@ -49,10 +50,8 @@ export function ChartAreaInteractive() {
 
   const averageScore =
   chartData.length > 0
-    ? Math.round(
-        chartData.reduce((sum, item) => sum + item.score, 0) /
-          chartData.length
-      )
+    ? chartData.reduce((sum, item) => sum + item.score, 0) /
+      chartData.length
     : 0;
 
 const highestScore =
@@ -71,7 +70,7 @@ const lowestScore =
         const response = await api.get<PullRequest[]>("/pull-requests");
 
         const data = response.data
-          .filter((pr) => pr.latest_review)
+          .filter((pr) => pr.latest_review !== null)
           .map((pr) => ({
             pr: `PR #${pr.pr_number}`,
             score: pr.latest_review!.final_score,
@@ -91,10 +90,10 @@ const lowestScore =
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI Review Scores</CardTitle>
+        <CardTitle>Pull Request Review Scores</CardTitle>
 
         <CardDescription>
-          Review score for each analyzed pull request
+          Final AI review score for each analyzed pull request
         </CardDescription>
       </CardHeader>
 
@@ -117,7 +116,7 @@ const lowestScore =
           </p>
 
           <h2 className="mt-2 text-3xl font-bold">
-            {averageScore}
+            {formatScore(averageScore)}
           </h2>
         </div>
 
@@ -127,7 +126,7 @@ const lowestScore =
           </p>
 
           <h2 className="mt-2 text-3xl font-bold text-green-600">
-            {highestScore}
+            {formatScore(highestScore)}
           </h2>
         </div>
 
@@ -137,58 +136,63 @@ const lowestScore =
           </p>
 
           <h2 className="mt-2 text-3xl font-bold text-red-600">
-            {lowestScore}
+            {formatScore(lowestScore)}
           </h2>
         </div>
       </div>
 
       {/* Chart */}
       {/* Chart */}
-      <ChartContainer
-        config={chartConfig}
-        className="h-[420px] w-full"
-      >
-        <BarChart
-          data={chartData}
-          margin={{
-            top: 20,
-            right: 20,
-            left: 10,
-            bottom: 20,
+      <div className="w-full overflow-x-auto">
+        <div
+          style={{
+            width: Math.max(640, chartData.length * 64),
+            height: 420,
           }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
-
-          <XAxis
-            dataKey="pr"
-            tickLine={false}
-            axisLine={false}
-          />
-
-          <YAxis
-            domain={[0, 100]}
-            padding={{top: 20}}
-            tickLine={false}
-            axisLine={false}
-          />
-
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent />}
-          />
-
-          <Bar
-  dataKey="score"
-  radius={[10, 10, 0, 0]}
-  fill="var(--primary)"
-  label={{
-    position: "top",
-    fill: "currentColor",
-    fontSize: 12,
-  }}
-/>
-        </BarChart>
-      </ChartContainer>
+          <ChartContainer config={chartConfig} className="h-full w-full">
+            <BarChart
+              data={chartData}
+              margin={{ top: 24, right: 20, left: 10, bottom: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="pr"
+                interval={0}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tickFormatter={(value: number) => formatScore(value)}
+                tickLine={false}
+                axisLine={false}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(label) => label}
+                    formatter={(value) => [formatScore(Number(value)), "Score"]}
+                  />
+                }
+              />
+              <Bar
+                dataKey="score"
+                barSize={44}
+                radius={[10, 10, 0, 0]}
+                fill="var(--primary)"
+                label={{
+                  position: "top",
+                  fill: "currentColor",
+                  fontSize: 12,
+                  formatter: (value) => formatScore(Number(value)),
+                }}
+              />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </div>
     </>
   )}
 </CardContent>

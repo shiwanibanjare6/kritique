@@ -18,6 +18,7 @@ import {
 
 import api from "@/services/api";
 import type { PullRequest } from "@/types";
+import { formatScore } from "@/lib/format-score";
 
 export function SectionCards() {
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
@@ -51,14 +52,12 @@ export function SectionCards() {
   const averageScore =
     totalReviews === 0
       ? 0
-      : Math.round(
-          pullRequests
-            .filter((pr) => pr.latest_review)
-            .reduce(
-              (sum, pr) => sum + pr.latest_review!.final_score,
-              0
-            ) / totalReviews
-        );
+      : pullRequests
+          .filter((pr) => pr.latest_review)
+          .reduce(
+            (sum, pr) => sum + pr.latest_review!.final_score,
+            0
+          ) / totalReviews;
 
   const cards = [
     {
@@ -81,7 +80,7 @@ export function SectionCards() {
     },
     {
       title: "Average Score",
-      value: `${averageScore}/100`,
+      value: `${formatScore(averageScore)}/100`,
       description: "Overall AI review score",
       icon: Star,
     },

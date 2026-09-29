@@ -10,6 +10,7 @@ import {
 
 import api from "@/services/api";
 import type { PullRequest } from "@/types";
+import { formatScore } from "@/lib/format-score";
 
 import {
   Card,
@@ -102,7 +103,7 @@ export function RecentActivity() {
                     <CheckCircle2 className="h-5 w-5" />
 
                     <span className="font-semibold">
-                      {pr.latest_review.final_score}/100
+                      {formatScore(pr.latest_review.final_score)}/100
                     </span>
 
                   </div>

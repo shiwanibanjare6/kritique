@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { auth } from "@/auth";
 
 interface Props {
   params: Promise<{
@@ -34,13 +35,21 @@ interface Props {
 }
 
 async function getPullRequest(id: string): Promise<PullRequest> {
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  const session = await auth();
+  const API_URL = (
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://kritique-6zrw.onrender.com"
+      : "http://127.0.0.1:8000")
+  ).replace(/\/$/, "");
 
   const res = await fetch(
     `${API_URL}/api/v1/pull-requests/${id}`,
     {
       cache: "no-store",
+      headers: session?.accessToken
+        ? { Authorization: `Bearer ${session.accessToken}` }
+        : undefined,
     }
   );
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import api from "@/services/api";
+import { toast } from "sonner";
 
 
 interface GitHubRepository {
@@ -14,13 +15,14 @@ interface GitHubRepository {
 }
 
 export default function ConnectRepositoryPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<number | null>(null);
 
-  useEffect(() => {
-  if (!session?.accessToken) {
+useEffect(() => {
+  const accessToken = session?.accessToken;
+  if (status !== "authenticated" || !accessToken) {
     return;
   }
 
@@ -28,7 +30,7 @@ export default function ConnectRepositoryPage() {
     try {
       const res = await api.get("/github/github-repositories", {
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
@@ -41,7 +43,7 @@ export default function ConnectRepositoryPage() {
   }
 
   loadRepositories();
-}, [session]);
+}, [session, status]);
 
   async function connectRepository(repo: GitHubRepository) {
     try {
@@ -57,10 +59,10 @@ export default function ConnectRepositoryPage() {
         },
       });
 
-      alert(`${repo.full_name} connected successfully!`);
+      toast.success("Repository connected successfully");
     } catch (error) {
       console.error(error);
-      alert("Failed to connect repository.");
+      toast.error("Failed to connect repository. Please try again.");
     } finally {
       setConnecting(null);
     }
@@ -76,7 +78,9 @@ export default function ConnectRepositoryPage() {
         Select a GitHub repository to connect to Kritique.
       </p>
 
-      {loading ? (
+      {status === "unauthenticated" ? (
+        <p className="mt-8">Sign in with GitHub to connect a repository.</p>
+      ) : loading ? (
         <p className="mt-8">Loading repositories...</p>
       ) : repositories.length === 0 ? (
         <p className="mt-8">No repositories found.</p>

@@ -1,4 +1,5 @@
 venv/
+.venv/
 
 __pycache__/
 
@@ -19,3 +20,4 @@ htmlcov/
 *.log
 
 .env.*
+!**/.env.example

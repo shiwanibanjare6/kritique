@@ -11,6 +11,7 @@ import {
 } from "recharts";
 
 import { PullRequest } from "@/types/pullRequest";
+import { formatScore } from "@/lib/format-score";
 
 interface Props {
   prs: PullRequest[];
@@ -47,9 +48,9 @@ export default function ScoreChart({
 
             <XAxis dataKey="name" />
 
-            <YAxis domain={[0, 100]} />
+            <YAxis domain={[0, 100]} tickFormatter={(value: number) => formatScore(value)} />
 
-            <Tooltip />
+            <Tooltip formatter={(value) => formatScore(Number(value))} />
 
             <Bar
               dataKey="score"

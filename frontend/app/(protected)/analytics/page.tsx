@@ -6,6 +6,7 @@ import { BarChart3, ChartLine, GitBranch, ListChecks, ShieldCheck, Star } from "
 
 import api from "@/services/api";
 import type { PullRequest } from "@/types";
+import { formatScore } from "@/lib/format-score";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,8 +33,8 @@ const scoreClass = (score: number) => {
   return "bg-red-600 text-white";
 };
 
-const formatScore = (value: number | null) =>
-  value === null ? "—" : `${Math.round(value)}/100`;
+const formatScoreWithScale = (value: number | null) =>
+  value === null ? "—" : `${formatScore(value)}/100`;
 
 export default function AnalyticsPage() {
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
@@ -214,7 +215,7 @@ export default function AnalyticsPage() {
                   value:
                     averageScore === null
                       ? "—"
-                      : `${Math.round(averageScore)}/100`,
+                      : `${formatScore(averageScore)}/100`,
                   icon: Star,
                 },
               ].map((card) => {
@@ -257,19 +258,19 @@ export default function AnalyticsPage() {
                   <div className="rounded-xl border border-border p-4">
                     <p className="text-sm text-muted-foreground">Security</p>
                     <p className="mt-2 text-3xl font-semibold">
-                      {formatScore(averageSecurityScore)}
+                      {formatScoreWithScale(averageSecurityScore)}
                     </p>
                   </div>
                   <div className="rounded-xl border border-border p-4">
                     <p className="text-sm text-muted-foreground">Style</p>
                     <p className="mt-2 text-3xl font-semibold">
-                      {formatScore(averageStyleScore)}
+                      {formatScoreWithScale(averageStyleScore)}
                     </p>
                   </div>
                   <div className="rounded-xl border border-border p-4">
                     <p className="text-sm text-muted-foreground">Architecture</p>
                     <p className="mt-2 text-3xl font-semibold">
-                      {formatScore(averageArchitectureScore)}
+                      {formatScoreWithScale(averageArchitectureScore)}
                     </p>
                   </div>
                 </CardContent>
@@ -309,7 +310,7 @@ export default function AnalyticsPage() {
                                   : scoreClass(row.averageScore)
                               }
                             >
-                              {formatScore(row.averageScore)}
+                              {formatScoreWithScale(row.averageScore)}
                             </Badge>
                           </TableCell>
                         </TableRow>
@@ -347,7 +348,7 @@ export default function AnalyticsPage() {
                           <TableCell>{pr.repository.full_name}</TableCell>
                           <TableCell>
                             <Badge className={scoreClass(pr.latest_review!.final_score)}>
-                              {pr.latest_review!.final_score}/100
+                              {formatScore(pr.latest_review!.final_score)}/100
                             </Badge>
                           </TableCell>
                           <TableCell>{pr.author}</TableCell>

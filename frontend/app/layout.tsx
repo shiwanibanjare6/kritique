@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import AuthSessionProvider from "@/components/session-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -32,6 +33,7 @@ export default function RootLayout({
           <ThemeProvider>
             <TooltipProvider>
               {children}
+              <Toaster />
             </TooltipProvider>
           </ThemeProvider>
         </AuthSessionProvider>

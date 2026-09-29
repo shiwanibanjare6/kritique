@@ -5,7 +5,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 
-
 class Repository(Base):
     __tablename__ = "repositories"
 
@@ -60,3 +59,5 @@ class Repository(Base):
         back_populates="repository",
         cascade="all, delete-orphan",
     )
+
+    connected_users = relationship("RepositoryConnection", back_populates="repository", cascade="all, delete-orphan")

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
 from app.repositories.pull_request_repository import PullRequestRepository
+from app.api.dependencies import get_github_login
 
 
 router = APIRouter(
@@ -16,10 +17,11 @@ router = APIRouter(
 @router.get("/")
 async def get_pull_requests(
     db: AsyncSession = Depends(get_db),
+    github_login: str = Depends(get_github_login),
 ):
     repo = PullRequestRepository(db)
 
-    pull_requests = await repo.get_all()
+    pull_requests = await repo.get_all_for_user(github_login)
 
     response = []
 
@@ -78,10 +80,11 @@ async def get_pull_requests(
 async def get_pull_request(
     pr_id: int,
     db: AsyncSession = Depends(get_db),
+    github_login: str = Depends(get_github_login),
 ):
     repo = PullRequestRepository(db)
 
-    pr = await repo.get_by_id(pr_id)
+    pr = await repo.get_by_id_for_user(pr_id, github_login)
 
     if pr is None:
         raise HTTPException(

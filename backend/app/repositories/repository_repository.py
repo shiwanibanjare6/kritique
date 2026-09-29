@@ -3,6 +3,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.pull_request import PullRequest
 from app.models.repository import Repository
+from app.models.repository_connection import RepositoryConnection
 
 
 class RepositoryRepository:
@@ -15,6 +16,29 @@ class RepositoryRepository:
             select(Repository).order_by(Repository.name)
         )
         return result.scalars().all()
+
+    async def get_all_for_user(self, github_login: str):
+        result = await self.db.execute(
+            select(Repository)
+            .join(RepositoryConnection)
+            .where(RepositoryConnection.github_login == github_login)
+            .order_by(Repository.name)
+        )
+        return result.scalars().all()
+
+    async def is_connected_to_user(self, repository_id: int, github_login: str) -> bool:
+        result = await self.db.execute(
+            select(RepositoryConnection.repository_id).where(
+                RepositoryConnection.repository_id == repository_id,
+                RepositoryConnection.github_login == github_login,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def connect_to_user(self, repository_id: int, github_login: str):
+        if not await self.is_connected_to_user(repository_id, github_login):
+            self.db.add(RepositoryConnection(repository_id=repository_id, github_login=github_login))
+            await self.db.commit()
 
     async def get_by_github_id(self, github_id: int):
         result = await self.db.execute(

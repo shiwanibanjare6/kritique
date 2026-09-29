@@ -9,6 +9,15 @@ class GitHubService:
     async def get_repositories(self):
         return await self.client.get_repositories()
 
+    async def get_repository(self, owner: str, repo: str):
+        return await self.client.get_repository(owner, repo)
+
+    async def get_authenticated_user(self):
+        return await self.client.get_authenticated_user()
+
+    async def get_pull_requests(self, owner: str, repo: str):
+        return await self.client.get_pull_requests(owner, repo)
+
     async def fetch_pr(
         self,
         owner: str,

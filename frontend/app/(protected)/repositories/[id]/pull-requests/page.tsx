@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatScore } from "@/lib/format-score";
 
 interface Repository {
   id: number;
@@ -149,7 +150,7 @@ export default function RepositoryDetailsPage() {
             <Card className="rounded-3xl">
               <CardContent className="space-y-3 p-8">
                 <p className="text-sm text-muted-foreground">Average AI Score</p>
-                <h2 className="text-5xl font-bold tracking-tight">{repository.average_score}/100</h2>
+                <h2 className="text-5xl font-bold tracking-tight">{formatScore(repository.average_score)}/100</h2>
               </CardContent>
             </Card>
           </div>

@@ -1,5 +1,4 @@
-from pydantic_settings import BaseSettings
-from pydantic_settings import SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -16,7 +15,7 @@ class Settings(BaseSettings):
 
     GITHUB_SECRET: str
 
-    GITHUB_TOKEN: str
+    GITHUB_TOKEN: str = ""
 
     DATABASE_URL: str
 
@@ -24,13 +23,18 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = ""
 
+    CORS_ORIGINS: str = "http://localhost:3000,https://kritique-three.vercel.app"
+
     model_config = SettingsConfigDict(
 
         env_file=".env",
-
         extra="ignore"
 
     )
 
 
 settings = Settings()
+
+
+def get_cors_origins() -> list[str]:
+    return [origin.strip().rstrip("/") for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]

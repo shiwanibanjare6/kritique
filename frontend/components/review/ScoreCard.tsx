@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { formatScore } from "@/lib/format-score";
 
 interface ScoreCardProps {
   title: string;
@@ -21,11 +22,11 @@ export default function ScoreCard({
 </p>
 
         <h2 className={`mt-3 text-4xl font-bold ${color}`}>
-          {Math.round(score)}
+          {formatScore(score)}
         </h2>
 
   <Progress
-    value={Math.round(score)}
+    value={score}
     className={`mt-4 ${
       score >= 90
         ? "[&>div]:bg-green-500"
@@ -38,7 +39,7 @@ export default function ScoreCard({
 <div className="mt-2">
 
   <p className="text-xs text-muted-foreground">
-    {Math.round(score)}/100
+    {formatScore(score)}/100
   </p>
 
   <p className="mt-1 text-sm font-medium">

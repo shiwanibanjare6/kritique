@@ -5,6 +5,7 @@ import * as React from "react"
 import api from "@/services/api"
 import { useRouter } from "next/navigation";
 import type { PullRequest } from "@/types"
+import { formatScore } from "@/lib/format-score"
 import Link from "next/link"
 
 import {
@@ -264,7 +265,7 @@ setData(prs);
                 : "bg-red-500"
             }
           >
-            {review.final_score}/100
+            {formatScore(review.final_score)}/100
           </Badge>
         )
       },
@@ -276,7 +277,7 @@ setData(prs);
       cell: ({ row }) => {
         const review = row.original.latest_review
 
-        return review ? review.security_score : "—"
+        return review ? formatScore(review.security_score) : "—"
       },
     },
 
@@ -286,7 +287,7 @@ setData(prs);
       cell: ({ row }) => {
         const review = row.original.latest_review
 
-        return review ? review.style_score : "—"
+        return review ? formatScore(review.style_score) : "—"
       },
     },
 
@@ -296,7 +297,7 @@ setData(prs);
       cell: ({ row }) => {
         const review = row.original.latest_review
 
-        return review ? review.architecture_score : "—"
+        return review ? formatScore(review.architecture_score) : "—"
       },
     },
 
@@ -732,7 +733,7 @@ function ReviewDrawer({
                     </p>
 
                     <h2 className="text-3xl font-bold">
-                      {review.final_score}
+                      {formatScore(review.final_score)}
                     </h2>
 
                   </div>
@@ -749,7 +750,7 @@ function ReviewDrawer({
                     </p>
 
                     <h2 className="text-3xl font-bold">
-                      {review.security_score}
+                      {formatScore(review.security_score)}
                     </h2>
 
                   </div>
@@ -765,7 +766,7 @@ function ReviewDrawer({
                     </p>
 
                     <h2 className="text-3xl font-bold">
-                      {review.style_score}
+                      {formatScore(review.style_score)}
                     </h2>
 
                   </div>
@@ -782,7 +783,7 @@ function ReviewDrawer({
                     </p>
 
                     <h2 className="text-3xl font-bold">
-                      {review.architecture_score}
+                      {formatScore(review.architecture_score)}
                     </h2>
 
                   </div>

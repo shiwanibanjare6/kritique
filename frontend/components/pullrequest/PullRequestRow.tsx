@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { PullRequest } from "@/types/pullRequest";
+import { formatScore } from "@/lib/format-score";
 
 interface Props {
   pr: PullRequest;
@@ -103,7 +104,7 @@ export default function PullRequestRow({
             className={`rounded-full px-3 py-2 text-sm font-bold ${scoreClass}`}
           >
 
-            {score}
+            {formatScore(score)}
 
           </span>
 

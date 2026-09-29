@@ -40,6 +40,7 @@ interface Repository {
 export default function RepositoriesPage() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const router = useRouter();
 
@@ -50,6 +51,7 @@ export default function RepositoriesPage() {
         setRepositories(res.data);
       } catch (err) {
         console.error(err);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -92,6 +94,15 @@ export default function RepositoriesPage() {
             </Card>
           ))}
         </div>
+      ) : error ? (
+        <Card className="mx-auto max-w-2xl">
+          <CardContent className="p-10 text-center">
+            <CardTitle>Unable to load repositories</CardTitle>
+            <CardDescription className="mt-2">
+              Check that the API is available, then refresh this page.
+            </CardDescription>
+          </CardContent>
+        </Card>
       ) : repositories.length === 0 ? (
         <Card className="mx-auto max-w-2xl">
           <CardContent className="p-10 text-center">
