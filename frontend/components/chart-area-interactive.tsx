@@ -30,11 +30,6 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-interface ChartData {
-  pr: string;
-  score: number;
-}
-
 const chartConfig = {
   score: {
     label: "AI Score",
@@ -44,9 +39,29 @@ const chartConfig = {
 
 
 
-export function ChartAreaInteractive() {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ChartAreaInteractiveProps {
+  pullRequests?: PullRequest[];
+  loading?: boolean;
+}
+
+export function ChartAreaInteractive({
+  pullRequests: suppliedPullRequests,
+  loading: suppliedLoading,
+}: ChartAreaInteractiveProps = {}) {
+  const [fetchedPullRequests, setFetchedPullRequests] = useState<PullRequest[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
+
+  const pullRequests = suppliedPullRequests ?? fetchedPullRequests;
+  const loading = suppliedPullRequests === undefined
+    ? fetchLoading
+    : suppliedLoading ?? false;
+
+  const chartData = pullRequests
+    .filter((pr) => pr.latest_review !== null)
+    .map((pr) => ({
+      pr: `PR #${pr.pr_number}`,
+      score: pr.latest_review!.final_score,
+    }));
 
   const averageScore =
   chartData.length > 0
@@ -65,27 +80,22 @@ const lowestScore =
     : 0;
 
   useEffect(() => {
+    if (suppliedPullRequests !== undefined) return;
+
     async function loadChart() {
       try {
         const response = await api.get<PullRequest[]>("/pull-requests/");
 
-        const data = response.data
-          .filter((pr) => pr.latest_review !== null)
-          .map((pr) => ({
-            pr: `PR #${pr.pr_number}`,
-            score: pr.latest_review!.final_score,
-          }));
-
-        setChartData(data);
+        setFetchedPullRequests(response.data);
       } catch (error) {
         console.error("Failed to load chart:", error);
       } finally {
-        setLoading(false);
+        setFetchLoading(false);
       }
     }
 
     loadChart();
-  }, []);
+  }, [suppliedPullRequests]);
 
   return (
     <Card>

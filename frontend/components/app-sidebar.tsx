@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 
 import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 
 import {
@@ -22,8 +21,6 @@ import {
   DatabaseIcon,
   ListTreeIcon,
   ChartColumnIncreasingIcon,
-  Settings2Icon,
-  CircleHelpIcon,
   ShieldCheckIcon,
 } from "lucide-react";
 
@@ -48,19 +45,6 @@ const data = {
       title: "Analytics",
       url: "/analytics",
       icon: <ChartColumnIncreasingIcon />,
-    },
-  ],
-
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: <Settings2Icon />,
-    },
-    {
-      title: "Help",
-      url: "/help",
-      icon: <CircleHelpIcon />,
     },
   ],
 };
@@ -109,11 +93,6 @@ export function AppSidebar({
 
       <SidebarContent>
         <NavMain items={data.navMain} />
-
-        <NavSecondary
-          items={data.navSecondary}
-          className="mt-auto"
-        />
       </SidebarContent>
 
       <SidebarFooter>

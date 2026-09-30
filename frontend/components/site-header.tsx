@@ -22,14 +22,6 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: "Analytics",
     subtitle: "Insights into AI review performance",
   },
-  "/settings": {
-    title: "Settings",
-    subtitle: "Manage your Kritique.ai preferences",
-  },
-  "/help": {
-    title: "Help",
-    subtitle: "Documentation and support",
-  },
 };
 
 export function SiteHeader() {
