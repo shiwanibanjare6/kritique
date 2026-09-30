@@ -28,7 +28,7 @@ export function RecentActivity() {
   useEffect(() => {
     async function loadActivity() {
       try {
-        const res = await api.get<PullRequest[]>("/pull-requests");
+        const res = await api.get<PullRequest[]>("/pull-requests/");
 
         setPullRequests(res.data.slice(0, 5));
       } catch (err) {

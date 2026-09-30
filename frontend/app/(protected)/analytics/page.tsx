@@ -43,7 +43,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     async function loadAnalytics() {
       try {
-        const response = await api.get<PullRequest[]>("/pull-requests");
+        const response = await api.get<PullRequest[]>("/pull-requests/");
         setPullRequests(response.data);
       } catch (error) {
         console.error("Failed to load analytics", error);

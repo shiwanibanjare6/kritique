@@ -67,7 +67,7 @@ const lowestScore =
   useEffect(() => {
     async function loadChart() {
       try {
-        const response = await api.get<PullRequest[]>("/pull-requests");
+        const response = await api.get<PullRequest[]>("/pull-requests/");
 
         const data = response.data
           .filter((pr) => pr.latest_review !== null)

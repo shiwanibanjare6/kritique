@@ -27,7 +27,7 @@ export function SectionCards() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const response = await api.get<PullRequest[]>("/pull-requests");
+        const response = await api.get<PullRequest[]>("/pull-requests/");
         setPullRequests(response.data);
       } catch (error) {
         console.error("Failed to load dashboard:", error);

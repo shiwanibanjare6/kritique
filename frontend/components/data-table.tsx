@@ -151,7 +151,7 @@ export function DataTable({
   React.useEffect(() => {
     const fetchPRs = async () => {
       try {
-        const endpoint = "/pull-requests";
+        const endpoint = "/pull-requests/";
 
 const res = await api.get(endpoint);
         let prs = res.data;
