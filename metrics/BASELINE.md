@@ -116,15 +116,35 @@ For authenticated endpoints add `--header "Authorization: Bearer $env:KRITIQUE_A
 
 ## 7. After backend optimisation (2026-10-22)
 
-Measured against production after deployment, 3 runs per endpoint. These requests were unauthenticated, so they do not establish authenticated user performance.
+- **Environment:** Production on Render, using Neon PostgreSQL.
+- **Method:** Enabled `DEBUG_SQL=true` and inspected Render logs while using the authenticated dashboard.
+- **Note:** These are observed samples, not controlled benchmark results.
 
-| Endpoint | Median | P95 | Response size |
-|---|---:|---:|---:|
-| `/api/v1/pull-requests/` | 311.5 ms | 1,128.2 ms | 0.098 KB |
-| `/api/v1/reviews` | 617.2 ms | 655.9 ms | 0.098 KB |
-| `/api/v1/github/repositories` | 310.7 ms | 315.4 ms | 0.098 KB |
-| `/health` | 304.9 ms | 305.5 ms | 0.015 KB |
+### Authenticated API timing observations
 
-Results: `metrics/results/20261022-191735.json`
+| Endpoint | Auth time | DB time | Total duration | DB queries | HTTP |
+|---|---:|---:|---:|---:|---:|
+| `/api/v1/stats/timeseries?days=30` | 672.99 ms | 576.74 ms | 5,037.30 ms | 1 | 200 |
+| `/api/v1/stats/summary` | 422.67 ms | 537.14 ms | 4,739.11 ms | 1 | 200 |
+| `/api/v1/stats/summary` | 477.55 ms | 525.00 ms | 1,007.59 ms | 1 | 200 |
+| `/api/v1/stats/timeseries?days=30` | 474.97 ms | 525.73 ms | 1,003.60 ms | 1 | 200 |
 
-Note: The earlier baseline used authenticated requests and 10 runs, so these results are not a direct apples-to-apples comparison. The `/health` measurement also had an earlier high-latency outlier; repeat measurements are needed to assess cold starts.
+### Repeated requests
+
+- Authentication time was approximately **375–590 ms** across observed requests.
+- Several requests reported `query_count=0` and `db_time_ms=0.00`, while authentication still took approximately 382–590 ms.
+- Logs showed repeated requests to `https://api.github.com/user`.
+- Initial dashboard requests took approximately 4.7–5.0 seconds; later requests were generally faster.
+
+### Findings and next optimisation
+
+GitHub user lookup is a potential authentication bottleneck because it is repeatedly called and contributes several hundred milliseconds to requests. Investigate caching the GitHub user lookup, ensuring cache entries are scoped safely to the authenticated user and expire appropriately.
+
+Database queries also contributed approximately 525–577 ms in the sampled initial requests. Profile the relevant queries before making further database changes.
+
+**Caveat:** These observations are from a small number of production log samples, not a controlled before-and-after benchmark. The timings come from different requests and should not be added together or treated as a direct performance comparison with the earlier baseline.
+
+- [x] Enable `DEBUG_SQL=true` and inspect production API timings.
+- [x] Record initial authenticated API timing observations.
+- [ ] Implement and measure GitHub user lookup caching.
+- [ ] Repeat controlled measurements and compare results against the baseline.
