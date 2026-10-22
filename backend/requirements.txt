@@ -9,6 +9,7 @@ httpx
 
 sqlalchemy[asyncio]>=2.0
 asyncpg
+redis>=5.0,<7.0
 alembic
 
 PyGithub

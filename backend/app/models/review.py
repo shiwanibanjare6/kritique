@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
+from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import JSON
 from sqlalchemy import Text
@@ -16,6 +17,15 @@ from app.database.base import Base
 
 class Review(Base):
     __tablename__ = "reviews"
+    __table_args__ = (
+        Index(
+            "ix_reviews_pull_request_created_id",
+            "pull_request_id",
+            "created_at",
+            "id",
+        ),
+        Index("ix_reviews_created_at", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

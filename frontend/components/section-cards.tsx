@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import {
   Bot,
   GitBranch,
@@ -16,71 +13,37 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import api from "@/services/api";
-import type { PullRequest } from "@/types";
 import { formatScore } from "@/lib/format-score";
 
-export function SectionCards() {
-  const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const response = await api.get<PullRequest[]>("/pull-requests/");
-        setPullRequests(response.data);
-      } catch (error) {
-        console.error("Failed to load dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadDashboard();
-  }, []);
-
-  const totalRepositories = new Set(
-    pullRequests.map((pr) => pr.repository.id)
-  ).size;
-
-  const totalPullRequests = pullRequests.length;
-
-  const totalReviews = pullRequests.filter(
-    (pr) => pr.latest_review !== null
-  ).length;
-
-  const averageScore =
-    totalReviews === 0
-      ? 0
-      : pullRequests
-          .filter((pr) => pr.latest_review)
-          .reduce(
-            (sum, pr) => sum + pr.latest_review!.final_score,
-            0
-          ) / totalReviews;
+export function SectionCards({ stats }: { stats: {
+  repositories: number;
+  pullRequests: number;
+  reviews: number;
+  averageScore: number | null;
+} }) {
 
   const cards = [
     {
       title: "Repositories",
-      value: totalRepositories,
+      value: stats.repositories,
       description: "Connected GitHub repositories",
       icon: GitBranch,
     },
     {
       title: "Pull Requests",
-      value: totalPullRequests,
+      value: stats.pullRequests,
       description: "Tracked pull requests",
       icon: GitPullRequest,
     },
     {
       title: "AI Reviews",
-      value: totalReviews,
+      value: stats.reviews,
       description: "Completed AI code reviews",
       icon: Bot,
     },
     {
       title: "Average Score",
-      value: `${formatScore(averageScore)}/100`,
+      value: stats.averageScore === null ? "—" : `${formatScore(stats.averageScore)}/100`,
       description: "Overall AI review score",
       icon: Star,
     },
@@ -101,7 +64,7 @@ export function SectionCards() {
                 <CardDescription>{card.title}</CardDescription>
 
                 <CardTitle className="mt-2 text-3xl font-bold">
-                  {loading ? "--" : card.value}
+                  {card.value}
                 </CardTitle>
               </div>
 

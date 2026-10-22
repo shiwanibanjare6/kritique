@@ -2,9 +2,8 @@
 
 import * as React from "react"
 
-import api from "@/services/api"
 import { useRouter } from "next/navigation";
-import type { PullRequest } from "@/types"
+import type { PullRequest, PullRequestListItem } from "@/types"
 import { formatScore } from "@/lib/format-score"
 import Link from "next/link"
 
@@ -129,55 +128,30 @@ const formatDate = (dateString: string) => {
 }
 
 interface DataTableProps {
-  repositoryId?: string;
-  limit?: number;
-}
-
-interface DataTableProps {
+  pullRequests: PullRequestListItem[];
   repositoryId?: string;
   limit?: number;
 }
 
 export function DataTable({
+  pullRequests,
   repositoryId,
   limit,
 }: DataTableProps)  {
-  const [data, setData] = React.useState<PullRequest[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [selectedPR, setSelectedPR] = React.useState<PullRequest | null>(null)
+  const data = React.useMemo(() => {
+    let scopedPullRequests = pullRequests;
+    if (repositoryId) {
+      scopedPullRequests = scopedPullRequests.filter(
+        (pr) => String(pr.repository.id) === String(repositoryId),
+      );
+    }
+    return limit ? scopedPullRequests.slice(0, limit) : scopedPullRequests;
+  }, [pullRequests, repositoryId, limit]);
+  const selectedPR: PullRequest | null = null;
   const [drawerOpen, setDrawerOpen] = React.useState(false)
   const router = useRouter();
 
-  React.useEffect(() => {
-    const fetchPRs = async () => {
-      try {
-        const endpoint = "/pull-requests/";
-
-const res = await api.get(endpoint);
-        let prs = res.data;
-        if (repositoryId) {
-  prs = prs.filter(
-    (pr: PullRequest) =>
-      String(pr.repository.id) === String(repositoryId)
-  );
-}
-
-if (limit) {
-  prs = prs.slice(0, limit);
-}
-
-setData(prs);
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPRs()
-  }, [repositoryId, limit])
-
-  const columns: ColumnDef<PullRequest>[] = [
+  const columns: ColumnDef<PullRequestListItem>[] = [
     {
       accessorKey: "pr_number",
       header: "PR",
@@ -226,16 +200,21 @@ setData(prs);
       accessorKey: "state",
       header: "Status",
       cell: ({ row }) => (
-        <Badge
-          variant={getStatusVariant(row.original.state)}
-          className={
-            row.original.state === "open"
-              ? "bg-green-500 text-white"
-              : ""
-          }
-        >
-          {row.original.state}
-        </Badge>
+        <div className="flex flex-col items-start gap-1">
+          <Badge
+            variant={getStatusVariant(row.original.state)}
+            className={
+              row.original.state === "open"
+                ? "bg-green-500 text-white"
+                : ""
+            }
+          >
+            {row.original.state}
+          </Badge>
+          <Badge variant="outline" className="capitalize">
+            Review {row.original.review_status ?? (row.original.latest_review ? "completed" : "pending")}
+          </Badge>
+        </div>
       ),
     },
 
@@ -337,7 +316,7 @@ setData(prs);
     },
   ]
 
-  const [rowSelection, setRowSelection] = React.useState({})
+  const rowSelection = React.useMemo(() => ({}), [])
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -454,11 +433,6 @@ setData(prs);
         className="relative w-full flex flex-col gap-4"
       >
         <div className="w-full overflow-x-auto rounded-lg border">
-          {loading ? (
-            <div className="flex h-60 items-center justify-center">
-              Loading Pull Requests...
-            </div>
-          ) : (
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -509,7 +483,6 @@ setData(prs);
                 )}
               </TableBody>
             </Table>
-          )}
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="flex w-full items-center gap-8 lg:w-fit">

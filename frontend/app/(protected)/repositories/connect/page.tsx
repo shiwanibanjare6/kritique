@@ -1,119 +1,31 @@
-"use client";
+import { Suspense } from "react";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import api from "@/services/api";
-import { toast } from "sonner";
-
-
-interface GitHubRepository {
-  github_id: number;
-  owner: string;
-  name: string;
-  full_name: string;
-  default_branch: string;
-}
+import { ApiErrorCard } from "@/components/api-error-card";
+import { ProtectedPageLoading } from "@/components/protected-page-loading";
+import { getAvailableGitHubRepositories } from "@/lib/api-server";
+import ConnectRepositoriesContent from "./connect-repositories-content";
 
 export default function ConnectRepositoryPage() {
-  const { data: session, status } = useSession();
-  const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState<number | null>(null);
-
-useEffect(() => {
-  const accessToken = session?.accessToken;
-  if (status !== "authenticated" || !accessToken) {
-    return;
-  }
-
-  async function loadRepositories() {
-    try {
-      const res = await api.get("/github/github-repositories", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      setRepositories(res.data);
-    } catch (error) {
-      console.error("Failed to load GitHub repositories:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  loadRepositories();
-}, [session, status]);
-
-  async function connectRepository(repo: GitHubRepository) {
-    try {
-      setConnecting(repo.github_id);
-
-      await api.post("/github/repositories/connect", null, {
-        params: {
-          github_id: repo.github_id,
-          owner: repo.owner,
-          name: repo.name,
-          full_name: repo.full_name,
-          default_branch: repo.default_branch,
-        },
-      });
-
-      toast.success("Repository connected successfully");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to connect repository. Please try again.");
-    } finally {
-      setConnecting(null);
-    }
-  }
-
   return (
     <main className="w-full px-10 py-8">
-      <h1 className="text-3xl font-bold">
-        Connect Repository
-      </h1>
-
+      <h1 className="text-3xl font-bold">Connect Repository</h1>
       <p className="mt-2 text-muted-foreground">
         Select a GitHub repository to connect to Kritique.
       </p>
-
-      {status === "unauthenticated" ? (
-        <p className="mt-8">Sign in with GitHub to connect a repository.</p>
-      ) : loading ? (
-        <p className="mt-8">Loading repositories...</p>
-      ) : repositories.length === 0 ? (
-        <p className="mt-8">No repositories found.</p>
-      ) : (
-        <div className="mt-8 space-y-4">
-          {repositories.map((repo) => (
-            <div
-              key={repo.github_id}
-              className="flex items-center justify-between rounded-xl border p-5"
-            >
-              <div>
-                <h2 className="font-semibold">
-                  {repo.full_name}
-                </h2>
-
-                <p className="text-sm text-muted-foreground">
-                  Default branch: {repo.default_branch}
-                </p>
-              </div>
-
-              <button
-                onClick={() => connectRepository(repo)}
-                disabled={connecting === repo.github_id}
-                className="rounded-lg bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
-              >
-                {connecting === repo.github_id
-                  ? "Connecting..."
-                  : "Connect"}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <Suspense fallback={<ProtectedPageLoading showHeading={false} />}>
+        <AvailableRepositories />
+      </Suspense>
     </main>
   );
+}
+
+async function AvailableRepositories() {
+  let repositories: Awaited<ReturnType<typeof getAvailableGitHubRepositories>> | null = null;
+  try {
+    repositories = await getAvailableGitHubRepositories();
+  } catch {
+    repositories = null;
+  }
+  if (!repositories) return <div className="mt-8"><ApiErrorCard title="Unable to load GitHub repositories" /></div>;
+  return <ConnectRepositoriesContent repositories={repositories} />;
 }

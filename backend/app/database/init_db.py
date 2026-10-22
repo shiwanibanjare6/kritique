@@ -1,10 +1,4 @@
-from app.database.base import Base
-from app.database.session import engine
+"""Database schema changes are applied with ``alembic upgrade head``.
 
-# Import models so SQLAlchemy registers them
-from app.models import *  # noqa: F401,F403
-
-
-async def init_database():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+The API and worker startup paths intentionally do not create or alter tables.
+"""

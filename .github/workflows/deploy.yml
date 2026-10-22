@@ -7,4 +7,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Deployment placeholder"
+      - name: Check deployment hooks
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ] || [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Configure VERCEL_DEPLOY_HOOK_URL and RENDER_DEPLOY_HOOK_URL repository secrets before deploying."
+            exit 1
+          fi
+      - name: Deploy frontend to Vercel
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error --request POST "$DEPLOY_HOOK_URL"
+      - name: Deploy backend to Render
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error --request POST "$DEPLOY_HOOK_URL"

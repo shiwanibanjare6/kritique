@@ -7,6 +7,7 @@ from app.repositories.repository_repository import RepositoryRepository
 from app.repositories.pull_request_repository import PullRequestRepository
 from app.services.github_service import GitHubService
 from app.api.dependencies import get_github_login
+from app.services.response_cache import response_cache
 
 router = APIRouter(
     prefix="/api/v1/github",
@@ -92,6 +93,7 @@ async def connect_repository(
     if existing:
         await repo.connect_to_user(existing.id, github_login)
         await PullRequestRepository(db).sync_from_github(existing.id, github_pull_requests)
+        await response_cache.invalidate_user(github_login)
         return {
             "status": "already_connected",
             "repository_id": existing.id,
@@ -106,6 +108,7 @@ async def connect_repository(
     )
     await repo.connect_to_user(repository.id, github_login)
     await PullRequestRepository(db).sync_from_github(repository.id, github_pull_requests)
+    await response_cache.invalidate_user(github_login)
 
     return {
         "status": "connected",

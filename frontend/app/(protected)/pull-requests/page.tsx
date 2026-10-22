@@ -1,5 +1,13 @@
+import { Suspense } from "react";
+
 import { SiteHeader } from "@/components/site-header";
-import { DataTable } from "@/components/data-table";
+import { DataTableLoader } from "@/components/data-table-loader";
+import { ApiErrorCard } from "@/components/api-error-card";
+import { ProtectedPageLoading } from "@/components/protected-page-loading";
+import { getPullRequestSummary } from "@/lib/api-server";
+import type { PullRequestListItem } from "@/types";
+
+export const maxDuration = 60;
 
 export default function PullRequestsPage() {
   return (
@@ -19,10 +27,24 @@ export default function PullRequestsPage() {
             </p>
           </div>
 
-          <DataTable />
+          <Suspense fallback={<ProtectedPageLoading showHeading={false} />}>
+            <PullRequestsData />
+          </Suspense>
 
         </div>
       </main>
     </>
   );
+}
+
+async function PullRequestsData() {
+  let listItems: PullRequestListItem[] | null = null;
+  try {
+    const result = await getPullRequestSummary(500);
+    listItems = result.items;
+  } catch {
+    listItems = null;
+  }
+  if (!listItems) return <ApiErrorCard title="Unable to load pull requests" description="Please try again." />;
+  return <DataTableLoader pullRequests={listItems} />;
 }

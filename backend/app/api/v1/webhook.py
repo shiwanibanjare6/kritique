@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Header
 from fastapi import HTTPException
-from fastapi import Request
+from fastapi import Request, Response
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ router = APIRouter(
 @router.post("/webhook")
 async def github_webhook(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
     x_github_event: str = Header(...),
     x_github_delivery: str = Header(...),
@@ -46,7 +47,7 @@ async def github_webhook(
             "message": "Webhook verified successfully"
         }
 
-    service = WebhookService(db)
+    service = WebhookService(db, getattr(request.app.state, "redis", None))
 
     result = await service.process_pull_request(
         payload,
@@ -54,4 +55,6 @@ async def github_webhook(
         x_github_delivery,
     )
 
+    if result.get("status") == "queued":
+        response.status_code = 202
     return result

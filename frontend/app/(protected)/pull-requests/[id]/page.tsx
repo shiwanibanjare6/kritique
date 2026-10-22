@@ -1,289 +1,33 @@
-import { notFound } from "next/navigation"
-import {
-  GitBranch,
-  User,
-  FolderGit2,
-  CircleCheckBig,
-} from "lucide-react"
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
 
-import FileReviewCard from "@/components/review/FileReviewCard";
+import PullRequestDetailsContent from "./pull-request-details-content";
+import { ApiErrorCard } from "@/components/api-error-card";
+import { ProtectedPageLoading } from "@/components/protected-page-loading";
+import { ApiServerError, getPullRequest } from "@/lib/api-server";
 
-import ReviewSummary from "@/components/review/ReviewSummary";
-
-import ScoreCard from "@/components/review/ScoreCard";
-
-import type { PullRequest } from "@/types"
-
-import { Badge } from "@/components/ui/badge";
-
-import Link from "next/link";
-
-import MergeRecommendation from "@/components/review/MergeRecommendation";
-
-import {
-  ArrowLeft,
-  ExternalLink,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { auth } from "@/auth";
-
-interface Props {
-  params: Promise<{
-    id: string
-  }>
-}
-
-async function getPullRequest(id: string): Promise<PullRequest> {
-  const session = await auth();
-  const API_URL = (
-    process.env.NEXT_PUBLIC_API_URL ||
-    (process.env.NODE_ENV === "production"
-      ? "https://kritique-6zrw.onrender.com"
-      : "http://127.0.0.1:8000")
-  ).replace(/\/$/, "");
-
-  const res = await fetch(
-    `${API_URL}/api/v1/pull-requests/${id}`,
-    {
-      cache: "no-store",
-      headers: session?.accessToken
-        ? { Authorization: `Bearer ${session.accessToken}` }
-        : undefined,
-    }
-  );
-
-  if (!res.ok) {
-    notFound();
-  }
-
-  return res.json();
-}
-
-export default async function PullRequestDetailsPage({
+export default function PullRequestDetailsPage({
   params,
-}: Props) {
-  const { id } = await params
-
-  const pr = await getPullRequest(id)
-
-  const review = pr.latest_review
-
+}: {
+  params: Promise<{ id: string }>;
+}) {
   return (
-    <main className="flex-1 w-full px-8 py-8 space-y-8">
+    <Suspense fallback={<ProtectedPageLoading />}>
+      <PullRequestData params={params} />
+    </Suspense>
+  );
+}
 
-      {/* Header */}
-
-      <div className="mb-8 flex items-center justify-between">
-
-  <Button
-    asChild
-    variant="outline"
-  >
-    <Link href="/">
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      Dashboard
-    </Link>
-  </Button>
-
-  <Button
-    asChild
-  >
-    <a
-      href={pr.url}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <ExternalLink className="mr-2 h-4 w-4" />
-
-      Open on GitHub
-    </a>
-  </Button>
-
-</div>
-
-      <div className="mb-8 space-y-3">
-
-        <div className="flex items-center gap-3">
-
-  <h1 className="text-4xl font-bold">
-    #{pr.pr_number}
-  </h1>
-
-  <h2 className="text-3xl font-semibold">
-    {pr.title}
-  </h2>
-
-</div>
-
-<p className="text-muted-foreground">
-
-  Repository:
-
-  <span className="ml-2 font-medium text-foreground">
-    {pr.repository.name}
-  </span>
-
-</p>
-
-      </div>
-
-      {/* Information */}
-
-      <div className="mb-8 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-
-        <div className="rounded-xl border p-6">
-
-          <FolderGit2 className="mb-4 h-6 w-6 text-primary" />
-
-          <p className="text-sm text-muted-foreground">
-            Repository
-          </p>
-
-          <h3 className="mt-2 font-semibold">
-            {pr.repository.name}
-          </h3>
-
-        </div>
-
-        <div className="rounded-xl border p-6">
-
-          <User className="mb-4 h-6 w-6 text-primary" />
-
-          <p className="text-sm text-muted-foreground">
-            Author
-          </p>
-
-          <h3 className="mt-2 font-semibold">
-            {pr.author}
-          </h3>
-
-        </div>
-
-        <div className="rounded-xl border p-6">
-
-          <GitBranch className="mb-4 h-6 w-6 text-primary" />
-
-          <p className="text-sm text-muted-foreground">
-            Branches
-          </p>
-
-          <h3 className="mt-2 font-semibold">
-            {pr.head_branch}
-          </h3>
-
-          <p className="text-xs text-muted-foreground">
-            →
-          </p>
-
-          <h3 className="font-semibold">
-            {pr.base_branch}
-          </h3>
-
-        </div>
-
-        <div className="rounded-xl border p-6">
-
-          <CircleCheckBig className="mb-4 h-6 w-6 text-green-500" />
-
-          <p className="text-sm text-muted-foreground">
-            Status
-          </p>
-
-          <Badge
-  className={
-    pr.state === "open"
-      ? "bg-green-500"
-      : "bg-gray-500"
+async function PullRequestData({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  let pullRequest: Awaited<ReturnType<typeof getPullRequest>> | null = null;
+  let failure: unknown = null;
+  try {
+    pullRequest = await getPullRequest(id);
+  } catch (error) {
+    failure = error;
   }
->
-  {pr.state}
-</Badge>
-
-        </div>
-
-      </div>
-
-      {!review && (
-        <div className="rounded-xl border p-6">
-          No AI review available.
-        </div>
-      )}
-
-      {review && (
-        
-  <>
-<MergeRecommendation
-  recommendation={review.merge_recommendation}
-  risk={review.risk_level}
-  strengths={review.strengths}
-  weaknesses={review.weaknesses}
-/>
-    <section className="mb-8 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-      <ScoreCard
-        title="Overall Score"
-        score={review.final_score}
-      />
-
-      <ScoreCard
-        title="Security"
-        score={review.security_score}
-        color="text-green-500"
-      />
-
-      <ScoreCard
-        title="Style"
-        score={review.style_score}
-        color="text-blue-500"
-      />
-
-      <ScoreCard
-        title="Architecture"
-        score={review.architecture_score}
-        color="text-orange-500"
-      />
-    </section>
-    <section className="mb-8">
-  <ReviewSummary
-  summary={review.summary}
-  strengths={review.strengths}
-  weaknesses={review.weaknesses}
-  riskLevel={review.risk_level}
-  mergeRecommendation={review.merge_recommendation}
-/>
-</section>
-
-<section className="space-y-8">
-
-  <div className="flex items-center justify-between">
-
-<h2 className="text-2xl font-bold">
-
-Files Reviewed
-
-</h2>
-
-<Badge variant="secondary">
-
-{review.agent_output.length} Files
-
-</Badge>
-
-</div>
-
-<div className="space-y-6">
-  {review.agent_output.map((fileReview, index) => (
-    <FileReviewCard
-      key={index}
-      review={fileReview}
-    />
-  ))}
-</div>
-
-</section>
-  </>
-)}
-
-    </main>
-  )
+  if (failure instanceof ApiServerError && failure.status === 404) notFound();
+  if (failure || !pullRequest) return <div className="px-8 py-8"><ApiErrorCard title="Unable to load pull request" /></div>;
+  return <PullRequestDetailsContent pr={pullRequest} />;
 }

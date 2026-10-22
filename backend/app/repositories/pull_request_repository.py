@@ -45,6 +45,7 @@ class PullRequestRepository:
                 "state": item["state"],
                 "base_branch": item["base"]["ref"],
                 "head_branch": item["head"]["ref"],
+                "head_sha": item["head"]["sha"],
             }
             if pr is None:
                 self.db.add(PullRequest(**values))

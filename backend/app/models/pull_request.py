@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -9,6 +9,10 @@ from sqlalchemy import BigInteger
 
 class PullRequest(Base):
     __tablename__ = "pull_requests"
+    __table_args__ = (
+        Index("ix_pull_requests_repository_id", "repository_id"),
+        Index("ix_pull_requests_state", "state"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
@@ -55,6 +59,11 @@ class PullRequest(Base):
     head_branch: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
+    )
+
+    head_sha: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

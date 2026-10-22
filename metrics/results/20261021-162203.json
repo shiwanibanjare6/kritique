@@ -1,0 +1,74 @@
+{
+  "measured_at": "2026-10-21T10:52:03.619587+00:00",
+  "base_url": "https://kritique-6zrw.onrender.com",
+  "runs_per_endpoint": 10,
+  "results": [
+    {
+      "endpoint": "https://kritique-6zrw.onrender.com/api/v1/pull-requests/",
+      "runs": 10,
+      "responses_received": 10,
+      "latency_ms": {
+        "min": 1621.091,
+        "median": 1706.614,
+        "p95": 2131.27
+      },
+      "response_size_kb": {
+        "min": 26.698,
+        "median": 26.698,
+        "p95": 26.698
+      },
+      "samples": [
+        {
+          "status_code": 200,
+          "latency_ms": 1956.19,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 2131.27,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1700.594,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1658.408,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1712.634,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1679.588,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 2130.882,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1825.781,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1621.091,
+          "response_size_kb": 26.698
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 1660.493,
+          "response_size_kb": 26.698
+        }
+      ]
+    }
+  ]
+}

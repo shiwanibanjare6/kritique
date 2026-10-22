@@ -8,6 +8,9 @@ import {
 
 import { AppSidebar } from "@/components/app-sidebar";
 
+export const preferredRegion = "pdx1";
+export const maxDuration = 60;
+
 export default async function ProtectedLayout({
   children,
 }: {

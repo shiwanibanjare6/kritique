@@ -1,240 +1,171 @@
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.pull_request_repository import PullRequestRepository
-from app.repositories.repository_repository import RepositoryRepository
-from app.repositories.webhook_repository import WebhookRepository
-from app.repositories.pull_request_file_repository import PullRequestFileRepository
-from app.repositories.review_repository import ReviewRepository
-
-from app.services.github_service import GitHubService
-from app.services.ai_review_service import AIReviewService
 from app.core.logging import logger
+from app.models.pull_request import PullRequest
+from app.models.repository import Repository
+from app.models.review_job import ReviewJob
+from app.models.webhook_event import WebhookEvent
+from app.services.review_queue import enqueue_review_job
+from app.core.redis import Redis
+from app.services.response_cache import response_cache
+
 
 class WebhookService:
+    SUPPORTED_ACTIONS = {"opened", "reopened", "synchronize", "ready_for_review"}
 
-    def __init__(self, db: AsyncSession):
-
+    def __init__(self, db: AsyncSession, redis: Redis | None = None):
         self.db = db
+        self.redis = redis
 
-        self.repository_repo = RepositoryRepository(db)
-        self.pull_request_repo = PullRequestRepository(db)
-        self.pull_request_file_repo = PullRequestFileRepository(db)
-        self.webhook_repo = WebhookRepository(db)
-        self.review_repo = ReviewRepository(db)
-
-        self.github_service = GitHubService()
-        self.ai_review = AIReviewService()
-         
     async def process_pull_request(
         self,
         payload: dict,
         event_type: str,
         delivery_id: str,
-    ):
-        if "pull_request" not in payload:
-            return {
-                "status": "ignored",
-                "reason": "Not a pull_request event",
-            }
+    ) -> dict:
+        if event_type != "pull_request" or "pull_request" not in payload:
+            return {"status": "ignored", "reason": "Unsupported GitHub event"}
 
-        if payload.get("action") not in {"opened", "reopened", "synchronize", "ready_for_review"}:
+        action = payload.get("action")
+        if action not in self.SUPPORTED_ACTIONS:
             return {"status": "ignored", "reason": "Pull request action does not require a review"}
 
-        existing_event = await self.webhook_repo.get_by_delivery_id(delivery_id)
-        if existing_event:
-            return {"status": "duplicate", "delivery_id": delivery_id}
-
-        repo_data = payload["repository"]
-
-        repository = await self.repository_repo.get_by_github_id(
-            repo_data["id"]
+        repo_data = payload.get("repository") or {}
+        pr_data = payload.get("pull_request") or {}
+        head_data = pr_data.get("head") or {}
+        owner_data = repo_data.get("owner") or {}
+        user_data = pr_data.get("user") or {}
+        revision_sha = head_data.get("sha")
+        required = (
+            repo_data.get("id"), owner_data.get("login"), repo_data.get("name"),
+            repo_data.get("full_name"), repo_data.get("default_branch"),
+            pr_data.get("id"), pr_data.get("number"), pr_data.get("html_url"),
+            pr_data.get("title"), user_data.get("login"), pr_data.get("state"),
+            (pr_data.get("base") or {}).get("ref"), head_data.get("ref"), revision_sha,
         )
+        if not all(required):
+            return {"status": "ignored", "reason": "Pull request payload is missing required fields"}
 
-        if repository is None:
+        # Unique database constraints arbitrate concurrent deliveries. Retry the
+        # transaction so the loser can observe the durable job/event and respond safely.
+        for attempt in range(3):
+            try:
+                existing_event = await self.db.scalar(
+                    select(WebhookEvent).where(WebhookEvent.delivery_id == delivery_id)
+                )
+                if existing_event is not None:
+                    return {"status": "duplicate", "delivery_id": delivery_id}
 
-            repository = await self.repository_repo.create(
-                github_id=repo_data["id"],
-                owner=repo_data["owner"]["login"],
-                name=repo_data["name"],
-                full_name=repo_data["full_name"],
-                default_branch=repo_data["default_branch"],
-            )
+                repository = await self.db.scalar(
+                    select(Repository).where(Repository.github_id == repo_data["id"])
+                )
+                if repository is None:
+                    repository = Repository(
+                        github_id=repo_data["id"],
+                        owner=owner_data["login"],
+                        name=repo_data["name"],
+                        full_name=repo_data["full_name"],
+                        default_branch=repo_data["default_branch"],
+                    )
+                    self.db.add(repository)
+                    await self.db.flush()
 
-        pr = payload["pull_request"]
+                pull_request = await self.db.scalar(
+                    select(PullRequest).where(PullRequest.github_pr_id == pr_data["id"])
+                )
+                current_job = None
+                if pull_request is None:
+                    pull_request = PullRequest(
+                        repository_id=repository.id,
+                        github_pr_id=pr_data["id"],
+                        html_url=pr_data["html_url"],
+                        pr_number=pr_data["number"],
+                        title=pr_data["title"],
+                        author=user_data["login"],
+                        state=pr_data["state"],
+                        base_branch=pr_data["base"]["ref"],
+                        head_branch=head_data["ref"],
+                        head_sha=revision_sha,
+                    )
+                    self.db.add(pull_request)
+                    await self.db.flush()
+                else:
+                    current_job = await self.db.scalar(
+                        select(ReviewJob).where(
+                            ReviewJob.pull_request_id == pull_request.id,
+                            ReviewJob.head_sha == revision_sha,
+                        )
+                    )
+                    if current_job is not None:
+                        self.db.add(
+                            WebhookEvent(
+                                repository_id=repository.id,
+                                delivery_id=delivery_id,
+                                event_type=event_type,
+                                payload=payload,
+                            )
+                        )
+                        await self.db.commit()
+                        logger.info(
+                            "Duplicate review revision ignored for %s#%s (job %s)",
+                            repository.full_name,
+                            pull_request.pr_number,
+                            current_job.id,
+                        )
+                        return {"status": "duplicate", "job_id": current_job.id}
 
-        existing_pr = await self.pull_request_repo.get_by_github_id(
-            pr["id"]
-        )
+                    pull_request.html_url = pr_data["html_url"]
+                    pull_request.title = pr_data["title"]
+                    pull_request.author = user_data["login"]
+                    pull_request.state = pr_data["state"]
+                    pull_request.base_branch = pr_data["base"]["ref"]
+                    pull_request.head_branch = head_data["ref"]
+                    pull_request.head_sha = revision_sha
 
-        if existing_pr is None:
+                job = ReviewJob(
+                    repository_id=repository.id,
+                    pull_request_id=pull_request.id,
+                    head_sha=revision_sha,
+                    status="queued",
+                )
+                self.db.add(job)
 
-            saved_pr = await self.pull_request_repo.create(
-                repository_id=repository.id,
-                github_pr_id=pr["id"],
-                html_url=pr["html_url"],
-                pr_number=pr["number"],
-                title=pr["title"],
-                author=pr["user"]["login"],
-                state=pr["state"],
-                base_branch=pr["base"]["ref"],
-                head_branch=pr["head"]["ref"],
-            )
+                self.db.add(
+                    WebhookEvent(
+                        repository_id=repository.id,
+                        delivery_id=delivery_id,
+                        event_type=event_type,
+                        payload=payload,
+                    )
+                )
+                await self.db.flush()
+                await self.db.commit()
+                await self.db.refresh(job)
+                await response_cache.invalidate_all()
 
-        else:
-
-            saved_pr = existing_pr
-
-        files = await self.github_service.get_pull_request_files(
-            repository.owner,
-            repository.name,
-            saved_pr.pr_number,
-        )
-        
-        await self.pull_request_file_repo.delete_by_pr(
-            saved_pr.id
-        )
-
-        pr_summaries = []
-
-        review_scores = {
-            "security_score": 0,
-            "style_score": 0,
-            "architecture_score": 0,
-            "final_score": 0,
-        }
-
-        all_comments = []
-
-        all_agent_output = []
-        for file in files:
-
-            # Save PR file
-            await self.pull_request_file_repo.create(
-                pull_request_id=saved_pr.id,
-                filename=file["filename"],
-                status=file["status"],
-                additions=file["additions"],
-                deletions=file["deletions"],
-                changes=file["changes"],
-                patch=file.get("patch"),
-            )
-
-            # AI Review
-            review = await self.ai_review.review_code(
-                filename=file["filename"],
-                patch=file.get("patch"),
-            )
-
-            all_agent_output.append(
-                {
-                    "file": file["filename"],
-                    "review": review,
+                logger.info(
+                    "Review job %s queued for %s#%s revision %s",
+                    job.id,
+                    repository.full_name,
+                    pull_request.pr_number,
+                    revision_sha[:12],
+                )
+                await enqueue_review_job(self.redis, job.id)
+                return {
+                    "status": "queued",
+                    "job_id": job.id,
+                    "repository": repository.full_name,
+                    "pull_request": pull_request.pr_number,
                 }
-            )
+            except IntegrityError:
+                await self.db.rollback()
+                if attempt == 2:
+                    raise
+                continue
+            except Exception:
+                await self.db.rollback()
+                raise
 
-            pr_summaries.append(
-    f"""
-File: {file['filename']}
-
-Summary:
-{review['summary']}
-
-Security Score: {review['security_score']}
-Style Score: {review['style_score']}
-Architecture Score: {review['architecture_score']}
-Overall Score: {review['final_score']}
-"""
-)
-
-            review_scores["security_score"] += review.get(
-                "security_score", 0
-            )
-            review_scores["style_score"] += review.get(
-                "style_score", 0
-            )
-            review_scores["architecture_score"] += review.get(
-                "architecture_score", 0
-            )
-            review_scores["final_score"] += review.get(
-                "final_score", 0
-            )
-
-            for comment in review.get("comments", []):
-
-                github_comment = {
-                    "path": file["filename"],
-                    "line": comment["line"],
-                    "side": "RIGHT",
-                    "body": (
-                        f"**{comment['severity'].upper()}**\n\n"
-                        f"{comment['comment']}"
-                    ),
-                }
-
-                all_comments.append(github_comment)
-        overall_review = await self.ai_review.review_pull_request(
-            pr_summaries
-        )
-        
-        file_count = max(len(files), 1)
-
-        security_score = review_scores["security_score"] / file_count
-        style_score = review_scores["style_score"] / file_count
-        architecture_score = (
-            review_scores["architecture_score"] / file_count
-        )
-        final_score = review_scores["final_score"] / file_count
-
-        await self.review_repo.create(
-    pull_request_id=saved_pr.id,
-
-    summary=overall_review["summary"],
-
-    security_score=security_score,
-    style_score=style_score,
-    architecture_score=architecture_score,
-    final_score=final_score,
-
-    merge_recommendation=overall_review["merge_recommendation"],
-    risk_level=overall_review["risk_level"],
-    strengths=overall_review["strengths"],
-    weaknesses=overall_review["weaknesses"],
-
-    agent_output=all_agent_output,
-)
-
-        await self.github_service.create_review(
-    owner=repository.owner,
-    repo=repository.name,
-    pull_number=saved_pr.pr_number,
-    body=(
-        f"## 🤖 AI Review Summary\n\n"
-        f"{overall_review['summary']}\n\n"
-        f"### Risk Level\n"
-        f"{overall_review['risk_level']}\n\n"
-        f"### Merge Recommendation\n"
-        f"{overall_review['merge_recommendation']}\n\n"
-        f"### Strengths\n"
-        + "\n".join(f"- {s}" for s in overall_review["strengths"])
-        + "\n\n### Weaknesses\n"
-        + "\n".join(f"- {w}" for w in overall_review["weaknesses"])
-    ),
-    comments=all_comments if all_comments else None,
-        )
-
-        await self.webhook_repo.create(
-            repository_id=repository.id,
-            delivery_id=delivery_id,
-            event_type=event_type,
-            payload=payload,
-        )
-
-        logger.info("AI review completed for %s#%s (%d files)", repository.full_name, saved_pr.pr_number, len(files))
-
-        return {
-            "status": "saved",
-            "repository": repository.full_name,
-            "pull_request": saved_pr.pr_number,
-            "files_processed": len(files),
-            "overall_score": round(final_score, 2),
-        }
+        raise RuntimeError("Unable to persist review job")

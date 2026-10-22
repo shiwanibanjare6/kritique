@@ -23,6 +23,8 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = ""
 
+    DEBUG_SQL: bool = False
+
     CORS_ORIGINS: str = "http://localhost:3000,https://kritique-three.vercel.app"
 
     model_config = SettingsConfigDict(

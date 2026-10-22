@@ -1,14 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   Clock3,
   ArrowRight,
 } from "lucide-react";
 
-import api from "@/services/api";
 import type { PullRequest } from "@/types";
 import { formatScore } from "@/lib/format-score";
 
@@ -21,25 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-export function RecentActivity() {
-  const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadActivity() {
-      try {
-        const res = await api.get<PullRequest[]>("/pull-requests/");
-
-        setPullRequests(res.data.slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadActivity();
-  }, []);
+export function RecentActivity({ pullRequests }: { pullRequests: PullRequest[] }) {
 
   return (
     <Card>
@@ -62,13 +40,7 @@ export function RecentActivity() {
 
       <CardContent>
 
-        {loading && (
-          <p className="text-muted-foreground">
-            Loading activity...
-          </p>
-        )}
-
-        {!loading && pullRequests.length === 0 && (
+        {pullRequests.length === 0 && (
           <p className="text-muted-foreground">
             No pull requests found.
           </p>

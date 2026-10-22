@@ -1,9 +1,11 @@
 import { signIn } from "@/auth";
 import { GitBranch } from "lucide-react";
+import { BackendWarmup } from "@/components/backend-warmup";
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <BackendWarmup />
       <div className="w-full max-w-md rounded-xl border bg-background p-8 shadow-lg">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold">Kritique.ai</h1>

@@ -1,20 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts";
-
-
-
-import api from "@/services/api";
-import type { PullRequest } from "@/types";
+import dynamic from "next/dynamic";
+import type { PullRequestScorePoint, ReviewTimeseriesPoint } from "@/types";
 import { formatScore } from "@/lib/format-score";
-
 import {
   Card,
   CardContent,
@@ -22,190 +10,67 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
-
-const chartConfig = {
-  score: {
-    label: "AI Score",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig;
-
-
-
-interface ChartAreaInteractiveProps {
-  pullRequests?: PullRequest[];
-  loading?: boolean;
-}
+const ScoreChart = dynamic(() => import("@/components/score-chart"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full overflow-x-auto">
+      <Skeleton className="h-[420px] min-w-[640px] w-full" />
+    </div>
+  ),
+});
 
 export function ChartAreaInteractive({
-  pullRequests: suppliedPullRequests,
-  loading: suppliedLoading,
-}: ChartAreaInteractiveProps = {}) {
-  const [fetchedPullRequests, setFetchedPullRequests] = useState<PullRequest[]>([]);
-  const [fetchLoading, setFetchLoading] = useState(true);
-
-  const pullRequests = suppliedPullRequests ?? fetchedPullRequests;
-  const loading = suppliedPullRequests === undefined
-    ? fetchLoading
-    : suppliedLoading ?? false;
-
-  const chartData = pullRequests
-    .filter((pr) => pr.latest_review !== null)
-    .map((pr) => ({
-      pr: `PR #${pr.pr_number}`,
-      score: pr.latest_review!.final_score,
-    }));
-
-  const averageScore =
-  chartData.length > 0
-    ? chartData.reduce((sum, item) => sum + item.score, 0) /
-      chartData.length
-    : 0;
-
-const highestScore =
-  chartData.length > 0
-    ? Math.max(...chartData.map((item) => item.score))
-    : 0;
-
-const lowestScore =
-  chartData.length > 0
-    ? Math.min(...chartData.map((item) => item.score))
-    : 0;
-
-  useEffect(() => {
-    if (suppliedPullRequests !== undefined) return;
-
-    async function loadChart() {
-      try {
-        const response = await api.get<PullRequest[]>("/pull-requests/");
-
-        setFetchedPullRequests(response.data);
-      } catch (error) {
-        console.error("Failed to load chart:", error);
-      } finally {
-        setFetchLoading(false);
-      }
-    }
-
-    loadChart();
-  }, [suppliedPullRequests]);
+  points,
+  stats,
+  mode = "pull-request",
+}: {
+  points: PullRequestScorePoint[] | ReviewTimeseriesPoint[];
+  stats?: { average: number | null; highest: number | null; lowest: number | null };
+  mode?: "pull-request" | "daily";
+}) {
+  const scores = points.map((point) => mode === "daily"
+    ? (point as ReviewTimeseriesPoint).average_score
+    : (point as PullRequestScorePoint).score);
+  const averageScore = stats ? stats.average : (scores.length
+    ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+    : null);
+  const highestScore = stats ? stats.highest : (scores.length ? Math.max(...scores) : null);
+  const lowestScore = stats ? stats.lowest : (scores.length ? Math.min(...scores) : null);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pull Request Review Scores</CardTitle>
-
+        <CardTitle>{mode === "daily" ? "Daily AI Review Score" : "Pull Request Review Scores"}</CardTitle>
         <CardDescription>
-          Final AI review score for each analyzed pull request
+          {mode === "daily"
+            ? "Average final score for reviews created each day"
+            : "Final AI review score for each analyzed pull request"}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-  {loading ? (
-    <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-      Loading chart...
-    </div>
-  ) : chartData.length === 0 ? (
-    <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-      No reviewed pull requests found.
-    </div>
-  ) : (
-    <>
-      {/* Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">
-            Average Score
-          </p>
-
-          <h2 className="mt-2 text-3xl font-bold">
-            {formatScore(averageScore)}
-          </h2>
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">
-            Highest Score
-          </p>
-
-          <h2 className="mt-2 text-3xl font-bold text-green-600">
-            {formatScore(highestScore)}
-          </h2>
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">
-            Lowest Score
-          </p>
-
-          <h2 className="mt-2 text-3xl font-bold text-red-600">
-            {formatScore(lowestScore)}
-          </h2>
-        </div>
-      </div>
-
-      {/* Chart */}
-      {/* Chart */}
-      <div className="w-full overflow-x-auto">
-        <div
-          style={{
-            width: Math.max(640, chartData.length * 64),
-            height: 420,
-          }}
-        >
-          <ChartContainer config={chartConfig} className="h-full w-full">
-            <BarChart
-              data={chartData}
-              margin={{ top: 24, right: 20, left: 10, bottom: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="pr"
-                interval={0}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                domain={[0, 100]}
-                tickFormatter={(value: number) => formatScore(value)}
-                tickLine={false}
-                axisLine={false}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={
-                  <ChartTooltipContent
-                    labelFormatter={(label) => label}
-                    formatter={(value) => [formatScore(Number(value)), "Score"]}
-                  />
-                }
-              />
-              <Bar
-                dataKey="score"
-                barSize={44}
-                radius={[10, 10, 0, 0]}
-                fill="var(--primary)"
-                label={{
-                  position: "top",
-                  fill: "currentColor",
-                  fontSize: 12,
-                  formatter: (value) => formatScore(Number(value)),
-                }}
-              />
-            </BarChart>
-          </ChartContainer>
-        </div>
-      </div>
-    </>
-  )}
-</CardContent>
+        {points.length > 0 ? (
+          <>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Average Score</p>
+                <h2 className="mt-2 text-3xl font-bold">{averageScore === null ? "—" : formatScore(averageScore)}</h2>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Highest Score</p>
+                <h2 className="mt-2 text-3xl font-bold text-green-600">{highestScore === null ? "—" : formatScore(highestScore)}</h2>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Lowest Score</p>
+                <h2 className="mt-2 text-3xl font-bold text-red-600">{lowestScore === null ? "—" : formatScore(lowestScore)}</h2>
+              </div>
+            </div>
+            <ScoreChart points={points} mode={mode} />
+          </>
+        ) : <div className="flex h-[300px] items-center justify-center text-muted-foreground">No review history found.</div>}
+      </CardContent>
     </Card>
   );
 }

@@ -1,0 +1,26 @@
+name: Keep Render API warm
+
+on:
+  schedule:
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Request backend health endpoint
+        env:
+          RENDER_HEALTH_URL: ${{ vars.RENDER_HEALTH_URL }}
+        run: |
+          if [ -z "$RENDER_HEALTH_URL" ]; then
+            echo "Repository variable RENDER_HEALTH_URL is required" >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --max-time 15 \
+            --retry 2 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "${RENDER_HEALTH_URL%/}/health"
