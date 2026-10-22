@@ -112,3 +112,19 @@ For authenticated endpoints add `--header "Authorization: Bearer $env:KRITIQUE_A
 - [ ] Controlled cold start after 20 minutes idle.
 - [ ] Total JS and request count for the other pages.
 - [ ] PR ID tested, Chrome version, network details.
+  
+
+## 7. After backend optimisation (2026-10-22)
+
+Measured against production after deployment, 3 runs per endpoint. These requests were unauthenticated, so they do not establish authenticated user performance.
+
+| Endpoint | Median | P95 | Response size |
+|---|---:|---:|---:|
+| `/api/v1/pull-requests/` | 311.5 ms | 1,128.2 ms | 0.098 KB |
+| `/api/v1/reviews` | 617.2 ms | 655.9 ms | 0.098 KB |
+| `/api/v1/github/repositories` | 310.7 ms | 315.4 ms | 0.098 KB |
+| `/health` | 304.9 ms | 305.5 ms | 0.015 KB |
+
+Results: `metrics/results/20261022-191735.json`
+
+Note: The earlier baseline used authenticated requests and 10 runs, so these results are not a direct apples-to-apples comparison. The `/health` measurement also had an earlier high-latency outlier; repeat measurements are needed to assess cold starts.

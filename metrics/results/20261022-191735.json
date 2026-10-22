@@ -1,0 +1,135 @@
+{
+  "measured_at": "2026-10-22T13:47:35.543546+00:00",
+  "base_url": "https://kritique-6zrw.onrender.com",
+  "runs_per_endpoint": 3,
+  "results": [
+    {
+      "endpoint": "https://kritique-6zrw.onrender.com/api/v1/pull-requests/",
+      "runs": 3,
+      "responses_received": 3,
+      "latency_ms": {
+        "min": 310.326,
+        "median": 311.467,
+        "p95": 1128.159
+      },
+      "response_size_kb": {
+        "min": 0.098,
+        "median": 0.098,
+        "p95": 0.098
+      },
+      "samples": [
+        {
+          "status_code": 422,
+          "latency_ms": 1128.159,
+          "response_size_kb": 0.098
+        },
+        {
+          "status_code": 422,
+          "latency_ms": 311.467,
+          "response_size_kb": 0.098
+        },
+        {
+          "status_code": 422,
+          "latency_ms": 310.326,
+          "response_size_kb": 0.098
+        }
+      ]
+    },
+    {
+      "endpoint": "https://kritique-6zrw.onrender.com/api/v1/reviews",
+      "runs": 3,
+      "responses_received": 3,
+      "latency_ms": {
+        "min": 612.757,
+        "median": 617.171,
+        "p95": 655.873
+      },
+      "response_size_kb": {
+        "min": 0.098,
+        "median": 0.098,
+        "p95": 0.098
+      },
+      "samples": [
+        {
+          "status_code": 422,
+          "latency_ms": 655.873,
+          "response_size_kb": 0.098
+        },
+        {
+          "status_code": 422,
+          "latency_ms": 617.171,
+          "response_size_kb": 0.098
+        },
+        {
+          "status_code": 422,
+          "latency_ms": 612.757,
+          "response_size_kb": 0.098
+        }
+      ]
+    },
+    {
+      "endpoint": "https://kritique-6zrw.onrender.com/api/v1/github/repositories",
+      "runs": 3,
+      "responses_received": 3,
+      "latency_ms": {
+        "min": 304.596,
+        "median": 310.665,
+        "p95": 315.42
+      },
+      "response_size_kb": {
+        "min": 0.098,
+        "median": 0.098,
+        "p95": 0.098
+      },
+      "samples": [
+        {
+          "status_code": 422,
+          "latency_ms": 310.665,
+          "response_size_kb": 0.098
+        },
+        {
+          "status_code": 422,
+          "latency_ms": 315.42,
+          "response_size_kb": 0.098
+        },
+        {
+          "status_code": 422,
+          "latency_ms": 304.596,
+          "response_size_kb": 0.098
+        }
+      ]
+    },
+    {
+      "endpoint": "https://kritique-6zrw.onrender.com/health",
+      "runs": 3,
+      "responses_received": 3,
+      "latency_ms": {
+        "min": 295.777,
+        "median": 304.876,
+        "p95": 305.511
+      },
+      "response_size_kb": {
+        "min": 0.015,
+        "median": 0.015,
+        "p95": 0.015
+      },
+      "samples": [
+        {
+          "status_code": 200,
+          "latency_ms": 295.777,
+          "response_size_kb": 0.015
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 305.511,
+          "response_size_kb": 0.015
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 304.876,
+          "response_size_kb": 0.015
+        }
+      ]
+    }
+  ]
+}

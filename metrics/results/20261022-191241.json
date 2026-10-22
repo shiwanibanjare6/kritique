@@ -1,0 +1,39 @@
+{
+  "measured_at": "2026-10-22T13:42:41.943603+00:00",
+  "base_url": "https://kritique-6zrw.onrender.com",
+  "runs_per_endpoint": 3,
+  "results": [
+    {
+      "endpoint": "https://kritique-6zrw.onrender.com/health",
+      "runs": 3,
+      "responses_received": 3,
+      "latency_ms": {
+        "min": 294.686,
+        "median": 297.951,
+        "p95": 23127.959
+      },
+      "response_size_kb": {
+        "min": 0.015,
+        "median": 0.015,
+        "p95": 0.015
+      },
+      "samples": [
+        {
+          "status_code": 200,
+          "latency_ms": 23127.959,
+          "response_size_kb": 0.015
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 294.686,
+          "response_size_kb": 0.015
+        },
+        {
+          "status_code": 200,
+          "latency_ms": 297.951,
+          "response_size_kb": 0.015
+        }
+      ]
+    }
+  ]
+}
