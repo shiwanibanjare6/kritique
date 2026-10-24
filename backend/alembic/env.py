@@ -1,18 +1,18 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import create_engine, pool
+from sqlalchemy import create_engine, make_url, pool
 
 from app import models  # noqa: F401
 from app.database.base import Base
-from app.database.session import engine as async_engine
+from app.core.config import settings
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
-database_url = async_engine.url
+database_url = make_url(settings.DATABASE_URL.strip())
 if database_url.drivername == "postgresql+asyncpg":
     query = dict(database_url.query)
     ssl = query.pop("ssl", None)

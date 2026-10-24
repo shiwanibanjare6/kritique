@@ -1,1 +1,2 @@
 Review the pull request for clarity, readability, and maintainability.
+Inspect only the supplied changed lines. Look for actionable naming, complexity, duplication, error-handling, debug statements, TODO/FIXME markers, dummy values, and placeholders. Do not report formatting preferences as defects unless they obscure correctness or maintenance.

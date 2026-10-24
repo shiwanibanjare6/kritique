@@ -106,12 +106,15 @@ const getScoreColorClass = (score: number) => {
 const getSeverityVariant = (severity: string) => {
   switch (severity.toLowerCase()) {
     case "high":
+    case "critical":
       return "destructive"
 
     case "medium":
+    case "warning":
       return "secondary"
 
     case "low":
+    case "info":
       return "outline"
 
     default:
@@ -815,8 +818,13 @@ function ReviewDrawer({
                         {file.review.comments.length === 0 ? (
 
                           <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-muted-foreground">
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            No issues found.
+                            {file.review.status === "failed" ? (
+                              <>Review failed{file.review.reason ? `: ${file.review.reason}` : "."}</>
+                            ) : file.review.status === "skipped" ? (
+                              <>Review skipped{file.review.reason ? `: ${file.review.reason}` : "."}</>
+                            ) : (
+                              <><CheckCircle2 className="h-4 w-4 text-green-600" />No issues found.</>
+                            )}
                           </div>
 
                         ) : (
@@ -832,7 +840,7 @@ function ReviewDrawer({
 
                                 <span>
 
-                                  Line {comment.line}
+                                  {comment.line == null ? "General finding" : `Line ${comment.line}`}
 
                                 </span>
 

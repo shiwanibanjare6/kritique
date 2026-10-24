@@ -240,6 +240,8 @@ def test_worker_success_persists_review_and_completes_job(monkeypatch):
         review_code=AsyncMock(return_value={
             "summary": "Looks good", "security_score": 90, "style_score": 88,
             "architecture_score": 92, "final_score": 90, "comments": [],
+            "status": "reviewed", "risk_level": "Low", "strengths": [],
+            "weaknesses": [], "merge_recommendation": "Ready to Merge",
         }),
         review_pull_request=AsyncMock(return_value={
             "summary": "Review summary", "merge_recommendation": "Ready to Merge",
@@ -276,11 +278,19 @@ def test_worker_marks_failure_and_continues_to_next_job(monkeypatch):
         return session
 
     github = SimpleNamespace(
-        get_pull_request_files=AsyncMock(side_effect=[RuntimeError("temporary provider error"), []]),
+        get_pull_request_files=AsyncMock(side_effect=[RuntimeError("temporary provider error"), [{
+            "filename": "src/app.py", "patch": "@@ change", "status": "modified",
+            "additions": 1, "deletions": 0, "changes": 1,
+        }]]),
         create_review=AsyncMock(),
     )
     ai = SimpleNamespace(
-        review_code=AsyncMock(),
+        review_code=AsyncMock(return_value={
+            "status": "reviewed", "summary": "Looks good", "security_score": 90,
+            "style_score": 90, "architecture_score": 90, "final_score": 90,
+            "risk_level": "Low", "strengths": [], "weaknesses": [],
+            "merge_recommendation": "Ready to Merge", "comments": [],
+        }),
         review_pull_request=AsyncMock(return_value={
             "summary": "Review summary", "merge_recommendation": "Ready to Merge",
             "risk_level": "Low", "strengths": [], "weaknesses": [],
@@ -303,3 +313,87 @@ def test_worker_marks_failure_and_continues_to_next_job(monkeypatch):
     assert failed_job.status == "failed"
     assert "temporary provider error" in failed_job.error_message
     assert later_job.status == "completed"
+
+
+def test_worker_excludes_failed_files_and_persists_counts_for_successful_files(monkeypatch):
+    from app.models.pull_request_file import PullRequestFile
+    from app.models.review import Review
+    from app.services import review_job_service
+
+    job = worker_job()
+    sessions = []
+
+    def session_factory():
+        session = WorkerSession(job)
+        sessions.append(session)
+        return session
+
+    github = SimpleNamespace(
+        get_pull_request_files=AsyncMock(return_value=[
+            {"filename": "src/ok.py", "patch": "@@ ok", "status": "modified", "additions": 1, "deletions": 0, "changes": 1},
+            {"filename": "src/fail.py", "patch": "@@ fail", "status": "modified", "additions": 1, "deletions": 0, "changes": 1},
+        ]),
+        create_review=AsyncMock(),
+    )
+    good = {
+        "status": "reviewed", "summary": "Good change", "security_score": 90,
+        "style_score": 80, "architecture_score": 70, "final_score": 80,
+        "risk_level": "Low", "strengths": [], "weaknesses": [],
+        "merge_recommendation": "Ready to Merge", "comments": [],
+    }
+    ai = SimpleNamespace(
+        review_code=AsyncMock(side_effect=[good, RuntimeError("invalid response")]),
+        review_pull_request=AsyncMock(return_value={
+            "summary": "One file was reviewed.", "summary_source": "model",
+        }),
+        pipeline_metrics=[],
+    )
+    monkeypatch.setattr(review_job_service, "GitHubService", lambda: github)
+    monkeypatch.setattr(review_job_service, "AIReviewService", lambda: ai)
+
+    completed = asyncio.run(review_job_service.execute_review_job(1, session_factory))
+
+    assert completed is True
+    review = next(item for session in sessions for item in session.added if isinstance(item, Review))
+    file_rows = [item for session in sessions for item in session.added if isinstance(item, PullRequestFile)]
+    assert review.files_reviewed == 1
+    assert review.files_failed == 1
+    assert review.final_score == 80
+    assert [row.review_status for row in file_rows] == ["reviewed", "failed"]
+    assert [entry["review"]["status"] for entry in review.agent_output] == ["reviewed", "failed"]
+
+
+def test_worker_fails_job_when_every_file_review_fails_without_storing_review(monkeypatch):
+    from app.models.pull_request_file import PullRequestFile
+    from app.models.review import Review
+    from app.services import review_job_service
+
+    job = worker_job()
+    sessions = []
+
+    def session_factory():
+        session = WorkerSession(job)
+        sessions.append(session)
+        return session
+
+    github = SimpleNamespace(
+        get_pull_request_files=AsyncMock(return_value=[
+            {"filename": "src/fail.py", "patch": "@@ fail", "status": "modified", "additions": 1, "deletions": 0, "changes": 1},
+        ]),
+        create_review=AsyncMock(),
+    )
+    ai = SimpleNamespace(
+        review_code=AsyncMock(side_effect=RuntimeError("validation failed")),
+        pipeline_metrics=[],
+    )
+    monkeypatch.setattr(review_job_service, "GitHubService", lambda: github)
+    monkeypatch.setattr(review_job_service, "AIReviewService", lambda: ai)
+
+    completed = asyncio.run(review_job_service.execute_review_job(1, session_factory))
+
+    assert completed is False
+    assert job.status == "failed"
+    assert "files_failed=1" in job.error_message
+    assert not any(isinstance(item, Review) for session in sessions for item in session.added)
+    file_rows = [item for session in sessions for item in session.added if isinstance(item, PullRequestFile)]
+    assert file_rows[0].review_status == "failed"

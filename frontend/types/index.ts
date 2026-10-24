@@ -1,26 +1,32 @@
 export interface ReviewComment {
-  line: number;
+  line: number | null;
   severity: string;
   comment: string;
+  category?: string;
+  suggestion?: string | null;
+  agent?: string;
 }
 
 export interface FileReview {
   file: string;
   review: {
     summary: string;
-
-    security_score: number;
-    style_score: number;
-    architecture_score: number;
-    final_score: number;
+    status?: "reviewed" | "skipped" | "failed";
+    reason?: string;
+    truncated?: boolean;
+    security_score?: number;
+    style_score?: number;
+    architecture_score?: number;
+    final_score?: number;
 
     // NEW
-    merge_recommendation: string;
-    risk_level: string;
-    strengths: string[];
-    weaknesses: string[];
+    merge_recommendation?: string;
+    risk_level?: string;
+    strengths?: string[];
+    weaknesses?: string[];
 
     comments: ReviewComment[];
+    agent_results?: Array<Record<string, unknown>>;
   };
 }
 
@@ -42,6 +48,12 @@ export interface LatestReview {
   created_at: string;
 
   agent_output: FileReview[];
+  pipeline_metrics?: Array<Record<string, unknown>> | null;
+  duration_ms?: number | null;
+  files_reviewed?: number | null;
+  files_skipped?: number | null;
+  files_failed?: number | null;
+  summary_source?: string | null;
 }
 
 export interface Repository {

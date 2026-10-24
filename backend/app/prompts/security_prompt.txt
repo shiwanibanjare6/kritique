@@ -1,1 +1,2 @@
 Analyze the pull request for security issues, secrets exposure, and vulnerable patterns.
+Inspect only the supplied changed lines. Consider injection, authorization and trust boundaries, secret handling, unsafe deserialization, path handling, and sensitive-data exposure. Report only concrete evidence; return no finding when the diff does not support one.

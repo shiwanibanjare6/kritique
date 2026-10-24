@@ -1,6 +1,7 @@
-class StyleAgent:
-    def __init__(self) -> None:
-        self.name = "style"
+from app.agents.base_agent import SpecialistAgent
 
-    def analyze(self, text: str) -> dict:
-        return {"message": "Style analysis placeholder", "text": text}
+
+class StyleAgent(SpecialistAgent):
+    name = "style"
+    prompt_file = "style_prompt.txt"
+    focus = "readability, maintainability, naming, error handling, and accidental debug or placeholder code"

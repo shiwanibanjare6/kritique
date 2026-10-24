@@ -23,9 +23,11 @@ interface Props {
 function getSeverityIcon(severity: string) {
   switch (severity.toLowerCase()) {
     case "high":
+    case "critical":
       return <AlertCircle className="h-4 w-4 text-red-500" />;
 
     case "medium":
+    case "warning":
       return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
 
     default:
@@ -65,6 +67,13 @@ export default function FileReviewCard({
   </p>
 </div>
 
+          {review.review.status && review.review.status !== "reviewed" && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {review.review.status === "skipped" ? "Review skipped" : "Review failed"}
+              {review.review.reason ? `: ${review.review.reason}` : "."}
+            </p>
+          )}
+
         </div>
 
         <div className="space-y-4">
@@ -75,16 +84,20 @@ export default function FileReviewCard({
 
           {review.review.comments.length === 0 ? (
             <p className="text-muted-foreground">
-              No issues detected. The AI did not find any improvements for this file.
+              {review.review.status === "failed"
+                ? "No findings are available because the file review failed."
+                : review.review.status === "skipped"
+                  ? "No findings are available because this file was skipped."
+                  : "No issues detected. The AI did not find any improvements for this file."}
             </p>
           ) : (
             review.review.comments.map((comment, index) => (
               <div
                 key={index}
                 className={`rounded-lg border p-4 ${
-  comment.severity === "high"
+  comment.severity === "high" || comment.severity === "critical"
     ? "border-red-500/30"
-    : comment.severity === "medium"
+    : comment.severity === "medium" || comment.severity === "warning"
     ? "border-yellow-500/30"
     : "border-green-500/30"
 }`}
@@ -96,7 +109,7 @@ export default function FileReviewCard({
                     {getSeverityIcon(comment.severity)}
 
                     <span className="font-medium">
-                      Line {comment.line}
+                      {comment.line == null ? "General finding" : `Line ${comment.line}`}
                     </span>
 
                   </div>

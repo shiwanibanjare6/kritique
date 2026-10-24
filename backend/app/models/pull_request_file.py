@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy import Boolean, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -24,3 +24,7 @@ class PullRequestFile(Base):
     changes: Mapped[int]
 
     patch: Mapped[str | None]
+
+    review_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    review_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    truncated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")

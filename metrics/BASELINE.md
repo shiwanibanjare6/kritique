@@ -148,3 +148,16 @@ Database queries also contributed approximately 525–577 ms in the sampled init
 - [x] Record initial authenticated API timing observations.
 - [ ] Implement and measure GitHub user lookup caching.
 - [ ] Repeat controlled measurements and compare results against the baseline.
+
+## 8. Multi-agent review benchmark (Prompt 4)
+Run `metrics/bench_review.py` against the same saved PR diff fixture. Use `--mode old` for the sequential one-call-per-file path and `--mode new --files-concurrency 1` / `4` for the specialist pipeline. These runs call the configured real Groq model and incur real token cost.
+
+| Measurement | Old sequential | New, files concurrency 1 | New, files concurrency 4 |
+|---|---:|---:|---:|
+| Fixture / PR identifier and changed file count | Not measured | Not measured | Not measured |
+| Runs and median total review time (ms) | Not measured | Not measured | Not measured |
+| Median provider calls per review | Not measured | Not measured | Not measured |
+| Median prompt tokens per review | Not measured | Not measured | Not measured |
+| Median completion tokens per review | Not measured | Not measured | Not measured |
+| Median estimated cost per review (USD) | Not measured | Not measured | Not measured |
+| Failed files / attempted reviewable files (%) | Not measured | Not measured | Not measured |

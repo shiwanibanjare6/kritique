@@ -1,6 +1,7 @@
-class SecurityAgent:
-    def __init__(self) -> None:
-        self.name = "security"
+from app.agents.base_agent import SpecialistAgent
 
-    def analyze(self, text: str) -> dict:
-        return {"message": "Security analysis placeholder", "text": text}
+
+class SecurityAgent(SpecialistAgent):
+    name = "security"
+    prompt_file = "security_prompt.txt"
+    focus = "secrets, injection, authorization, unsafe data handling, and vulnerable patterns"

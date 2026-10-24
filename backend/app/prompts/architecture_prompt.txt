@@ -1,1 +1,2 @@
 Review the pull request for architectural consistency and maintainability.
+Inspect only the supplied changed lines. Consider module boundaries, compatibility, data flow, lifecycle behavior, performance, and consistency with the existing design. Avoid proposing broad redesigns when a localized fix is sufficient.

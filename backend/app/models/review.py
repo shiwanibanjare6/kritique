@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy import String
+from sqlalchemy import Integer
 
 from app.database.base import Base
 
@@ -79,10 +80,17 @@ class Review(Base):
         default=list,
     )
 
-    agent_output: Mapped[dict] = mapped_column(
+    agent_output: Mapped[list] = mapped_column(
         JSON,
-        default=dict,
+        default=list,
     )
+
+    pipeline_metrics: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    files_reviewed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    files_skipped: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    files_failed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    summary_source: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

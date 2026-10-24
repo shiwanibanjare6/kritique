@@ -1,6 +1,7 @@
-class ArchitectureAgent:
-    def __init__(self) -> None:
-        self.name = "architecture"
+from app.agents.base_agent import SpecialistAgent
 
-    def analyze(self, text: str) -> dict:
-        return {"message": "Architecture analysis placeholder", "text": text}
+
+class ArchitectureAgent(SpecialistAgent):
+    name = "architecture"
+    prompt_file = "architecture_prompt.txt"
+    focus = "architectural consistency, module boundaries, performance, and long-term behavior"
